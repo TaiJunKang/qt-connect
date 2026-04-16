@@ -32,7 +32,12 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif">
+        <p>Loading QT Connect...</p>
+      </div>
+    </div>
+    <script>window.onerror=function(m,s,l,c,e){document.getElementById('root').innerHTML='<pre style="padding:40px;color:red">'+m+'\n'+s+':'+l+'</pre>';}</script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
