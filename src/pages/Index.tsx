@@ -18,6 +18,7 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [writeDate, setWriteDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ const Index = () => {
       getProfile(user.id).then(({ data }) => {
         setDisplayName(data?.display_name || user.email?.split("@")[0] || "사용자");
         setIsAdmin(data?.role === "admin");
+        setAvatarUrl(data?.avatar_url || null);
       });
     } else {
       setIsAdmin(false);
@@ -108,6 +110,7 @@ const Index = () => {
             displayName={displayName}
             userId={user.id}
             isAdmin={isAdmin}
+            avatarUrl={avatarUrl}
             onSignOut={() => {
               setUser(null);
               setActiveTab("home");
@@ -116,6 +119,7 @@ const Index = () => {
               setWriteDate(date);
               setActiveTab("write");
             }}
+            onAvatarChange={setAvatarUrl}
           />
         );
     }

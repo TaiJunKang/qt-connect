@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { LogOut, User, ShieldCheck, ChevronRight, Bell, BellOff, Settings, BookMarked, BookOpenCheck, Moon, Sun, ImageIcon } from "lucide-react";
+import { useState, useRef } from "react";
+import { LogOut, User, ShieldCheck, ChevronRight, Bell, BellOff, Settings, BookMarked, BookOpenCheck, Moon, Sun, ImageIcon, Camera, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { signOut } from "@/lib/supabase-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MyArchive from "./MyArchive";
 import BibleReadingPlan from "./BibleReadingPlan";
@@ -22,17 +23,67 @@ interface SettingsTabProps {
   displayName: string;
   userId: string;
   isAdmin: boolean;
+  avatarUrl?: string | null;
   onSignOut: () => void;
   onEditLog?: (date: string) => void;
+  onAvatarChange?: (url: string) => void;
 }
 
-export default function SettingsTab({ email, displayName, userId, isAdmin, onSignOut, onEditLog }: SettingsTabProps) {
+export default function SettingsTab({ email, displayName, userId, isAdmin, avatarUrl, onSignOut, onEditLog, onAvatarChange }: SettingsTabProps) {
   const [showArchive, setShowArchive] = useState(false);
   const [showReadingPlan, setShowReadingPlan] = useState(false);
   const [showCardNews, setShowCardNews] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const { toast } = useToast();
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "이미지 파일만 업로드할 수 있습니다", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "2MB 이하 이미지만 업로드할 수 있습니다", variant: "destructive" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(path);
+
+      const url = `${publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("user_id", userId);
+      if (updateError) throw updateError;
+
+      onAvatarChange?.(url);
+      toast({ title: "프로필 사진이 변경되었습니다" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "업로드 실패";
+      toast({ title: msg, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
   const navigate = useNavigate();
 
   const supported = isNotificationSupported();
@@ -94,9 +145,33 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, onSig
         <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
         <div className="px-5 pb-5 -mt-8">
           <div className="flex items-end gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0 shadow-soft border-4 border-card">
-              <span className="text-2xl font-bold text-primary-foreground">{initial}</span>
-            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="relative w-16 h-16 rounded-2xl flex-shrink-0 shadow-soft border-4 border-card overflow-hidden group"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-foreground">{initial}</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
             <div className="flex-1 min-w-0 pb-1">
               <p className="text-[16px] font-bold text-foreground truncate">{displayName || "사용자"}</p>
               <p className="text-[12px] text-muted-foreground/60 truncate">{email}</p>

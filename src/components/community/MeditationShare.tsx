@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback } from "react";
 import { Users, RefreshCw, MessageCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getAvatarColor } from "./avatar";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
+import UserAvatar from "../UserAvatar";
 
 function getTodayKey() {
   const d = new Date();
@@ -18,6 +18,7 @@ interface QTLog {
   id: string;
   user_id: string;
   user_name: string;
+  avatar_url: string | null;
   meditation: string;
   application: string;
   created_at: string;
@@ -35,9 +36,7 @@ function LogCard({ log, userId, userDisplayName, onChange }: { log: QTLog; userI
   const [expanded, setExpanded] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const { toast } = useToast();
-  const initial = log.user_name?.charAt(0) || "?";
   const time = new Date(log.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-  const avatarColor = getAvatarColor(log.user_name || "");
   const isOwner = log.user_id === userId;
 
   const handleDelete = async () => {
@@ -65,9 +64,7 @@ function LogCard({ log, userId, userDisplayName, onChange }: { log: QTLog; userI
       <div className="px-5 pt-4 pb-4">
         {/* Author row */}
         <div className="flex items-center gap-2.5 mb-4">
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0 shadow-xs`}>
-            {initial}
-          </div>
+          <UserAvatar name={log.user_name || "익명"} avatarUrl={log.avatar_url} size="sm" className="shadow-xs" />
           <span className="text-[13px] font-semibold text-foreground flex-1">{log.user_name || "익명"}</span>
           <span className="text-[10px] text-muted-foreground/60 bg-muted/50 px-2 py-0.5 rounded-md">{time}</span>
         </div>
@@ -171,17 +168,23 @@ export default function MeditationShare({ userId, userDisplayName }: MeditationS
     }
 
     const logIds = logData.map((l) => l.id);
+    const userIds = [...new Set(logData.map((l) => l.user_id))];
 
-    // 2. Fetch likes
+    // 2. Fetch likes, comments, and avatar URLs
     let likes: { content_id: string; user_id: string }[] = [];
     let comments: { content_id: string }[] = [];
+    let avatarMap = new Map<string, string | null>();
     if (logIds.length > 0) {
-      const [likesRes, commentsRes] = await Promise.all([
+      const [likesRes, commentsRes, profilesRes] = await Promise.all([
         supabase.from("likes").select("content_id, user_id").eq("content_type", "qt_log").in("content_id", logIds),
         supabase.from("comments").select("content_id").eq("content_type", "qt_log").in("content_id", logIds),
+        supabase.from("profiles").select("user_id, avatar_url").in("user_id", userIds),
       ]);
       likes = likesRes.data ?? [];
       comments = commentsRes.data ?? [];
+      for (const p of profilesRes.data ?? []) {
+        avatarMap.set(p.user_id, p.avatar_url);
+      }
     }
 
     // 3. Aggregate
@@ -199,6 +202,7 @@ export default function MeditationShare({ userId, userDisplayName }: MeditationS
     setLogs(
       logData.map((l) => ({
         ...l,
+        avatar_url: avatarMap.get(l.user_id) ?? null,
         like_count: likeCount.get(l.id) ?? 0,
         has_liked: myLiked.has(l.id),
         comment_count: commentCount.get(l.id) ?? 0,

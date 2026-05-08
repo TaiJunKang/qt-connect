@@ -29,17 +29,23 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
       return;
     }
 
-    // 2. Fetch responses + comments in parallel
+    // 2. Fetch responses, comments, and avatar URLs in parallel
     const prayerIds = requests.map((r) => r.id);
+    const userIds = [...new Set(requests.map((r) => r.user_id))];
     let responses: { prayer_id: string; user_id: string }[] = [];
     let comments: { content_id: string }[] = [];
+    const avatarMap = new Map<string, string | null>();
     if (prayerIds.length > 0) {
-      const [respRes, commRes] = await Promise.all([
+      const [respRes, commRes, profilesRes] = await Promise.all([
         supabase.from("prayer_responses").select("prayer_id, user_id").in("prayer_id", prayerIds),
         supabase.from("comments").select("content_id").eq("content_type", "prayer_request").in("content_id", prayerIds),
+        supabase.from("profiles").select("user_id, avatar_url").in("user_id", userIds),
       ]);
       responses = respRes.data ?? [];
       comments = commRes.data ?? [];
+      for (const p of profilesRes.data ?? []) {
+        avatarMap.set(p.user_id, p.avatar_url);
+      }
     }
 
     // 3. Aggregate
@@ -58,6 +64,7 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
       id: r.id,
       user_id: r.user_id,
       user_name: r.user_name,
+      avatar_url: avatarMap.get(r.user_id) ?? null,
       title: r.title,
       content: r.content,
       category: r.category,

@@ -3,12 +3,13 @@ import { MessageCircle, Send, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { getAvatarColor } from "./avatar";
+import UserAvatar from "../UserAvatar";
 
 interface Comment {
   id: string;
   user_id: string;
   user_name: string;
+  avatar_url: string | null;
   content: string;
   is_anonymous: boolean;
   created_at: string;
@@ -45,7 +46,18 @@ export default function CommentSection({ contentType, contentId, userId, userDis
       .eq("content_type", contentType)
       .eq("content_id", contentId)
       .order("created_at", { ascending: true });
-    if (!error && data) setComments(data as Comment[]);
+    if (!error && data && data.length > 0) {
+      const userIds = [...new Set(data.map((c) => c.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, avatar_url")
+        .in("user_id", userIds);
+      const avatarMap = new Map<string, string | null>();
+      for (const p of profiles ?? []) avatarMap.set(p.user_id, p.avatar_url);
+      setComments(data.map((c) => ({ ...c, avatar_url: avatarMap.get(c.user_id) ?? null })));
+    } else {
+      setComments([]);
+    }
     setLoading(false);
   }, [contentType, contentId]);
 
@@ -95,15 +107,11 @@ export default function CommentSection({ contentType, contentId, userId, userDis
         <div className="space-y-2.5">
           {comments.map((c) => {
             const name = c.is_anonymous ? "익명" : (c.user_name || "익명");
-            const initial = name.charAt(0) || "?";
-            const avatar = c.is_anonymous ? "from-slate-400 to-slate-500" : getAvatarColor(c.user_name || "");
             const isOwner = c.user_id === userId;
 
             return (
               <div key={c.id} className="flex items-start gap-2">
-                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}>
-                  {initial}
-                </div>
+                <UserAvatar name={name} avatarUrl={c.is_anonymous ? null : c.avatar_url} size="xs" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-1.5 mb-0.5">
                     <span className="text-[12px] font-semibold text-foreground">{name}</span>

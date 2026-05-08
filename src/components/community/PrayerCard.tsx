@@ -2,14 +2,15 @@ import { useState } from "react";
 import { HandHeart, Sparkles, Check, Trash2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getAvatarColor } from "./avatar";
 import { getCategory } from "./prayer-categories";
 import CommentSection from "./CommentSection";
+import UserAvatar from "../UserAvatar";
 
 export interface PrayerItem {
   id: string;
   user_id: string;
   user_name: string;
+  avatar_url: string | null;
   title: string;
   content: string;
   category: string;
@@ -45,10 +46,6 @@ export default function PrayerCard({ prayer, currentUserId, currentUserName, onC
   const category = getCategory(prayer.category);
 
   const displayName = prayer.is_anonymous ? "익명의 지체" : (prayer.user_name || "익명");
-  const initial = prayer.is_anonymous ? "?" : (prayer.user_name?.charAt(0) || "?");
-  const avatarColor = prayer.is_anonymous
-    ? "from-slate-400 to-slate-500"
-    : getAvatarColor(prayer.user_name || "");
 
   const isOwner = prayer.user_id === currentUserId;
 
@@ -116,9 +113,12 @@ export default function PrayerCard({ prayer, currentUserId, currentUserName, onC
       <div className="px-5 pt-4 pb-4">
         {/* Top row: avatar, name, time, category */}
         <div className="flex items-center gap-2.5 mb-3">
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0 shadow-xs`}>
-            {initial}
-          </div>
+          <UserAvatar
+            name={displayName}
+            avatarUrl={prayer.is_anonymous ? null : prayer.avatar_url}
+            size="sm"
+            className="shadow-xs"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] font-semibold text-foreground truncate">{displayName}</span>
