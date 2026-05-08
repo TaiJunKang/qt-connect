@@ -36,9 +36,10 @@ function getLastWeekDates(): { date: string; dateObj: Date }[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(lastMonday);
     d.setDate(lastMonday.getDate() + i);
+    const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
-    return { date: `${mm}-${dd}`, dateObj: d };
+    return { date: `${yyyy}-${mm}-${dd}`, dateObj: d };
   });
 }
 
@@ -143,7 +144,7 @@ export default function WeeklyReview({ userId }: WeeklyReviewProps) {
               >
                 <span className="font-medium opacity-60">{dayLabel}</span>
                 <span className={`font-bold ${e.hasLog ? "text-[11px]" : "text-[10px]"}`}>
-                  {e.date.split("-")[1]}
+                  {e.date.split("-")[2]}
                 </span>
               </button>
             );

@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
             handler: "NetworkFirst",
             options: {
-              cacheName: "supabase-cache",
+              cacheName: "supabase-v2",
               networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 50,

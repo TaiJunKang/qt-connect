@@ -136,13 +136,14 @@ export async function searchBible(keyword: string, limit = 50): Promise<BibleSea
   return results;
 }
 
-/** Generate "MM-DD" strings for 7 consecutive days starting from a Date */
+/** Generate "YYYY-MM-DD" strings for 7 consecutive days starting from a Date */
 export function getWeekDates(startDate: Date): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
+    const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    return `${mm}-${dd}`;
+    return `${yyyy}-${mm}-${dd}`;
   });
 }

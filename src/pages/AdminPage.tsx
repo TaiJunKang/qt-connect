@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, BookOpen, ShieldCheck } from "lucide-react";
+import { Trash2, BookOpen, ShieldCheck, ChevronDown } from "lucide-react";
 import WeeklyPlanSection from "@/components/admin/WeeklyPlanSection";
 import AnnouncementSection from "@/components/admin/AnnouncementSection";
 
@@ -25,12 +25,13 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(true);
   const [plans, setPlans] = useState<QtPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
+  const [filterMonth, setFilterMonth] = useState<string>("all");
 
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        navigate("/");
+        navigate("/", { replace: true });
         return;
       }
       // DB에서 role 체크
@@ -46,7 +47,7 @@ export default function AdminPage() {
           description: "권한이 없습니다.",
           variant: "destructive",
         });
-        navigate("/");
+        navigate("/", { replace: true });
         return;
       }
       setChecking(false);
@@ -107,20 +108,50 @@ export default function AdminPage() {
 
         {/* Registered plans list */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">등록된 큐티 목록 ({plans.length}개)</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">등록된 큐티 목록 ({plans.length}개)</h2>
+            </div>
+            <div className="relative">
+              <select
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="text-xs bg-card border border-border rounded-lg px-3 py-1.5 pr-7 appearance-none cursor-pointer text-foreground"
+              >
+                <option value="all">전체</option>
+                {(() => {
+                  // Collect unique YYYY-MM prefixes from plans
+                  const ymSet = new Set(plans.map((p) => p.date.slice(0, 7)));
+                  const ymList = [...ymSet].sort();
+                  return ymList.map((ym) => {
+                    const count = plans.filter((p) => p.date.startsWith(ym)).length;
+                    const [y, m] = ym.split("-");
+                    return (
+                      <option key={ym} value={ym}>
+                        {y}년 {parseInt(m)}월 ({count}개)
+                      </option>
+                    );
+                  });
+                })()}
+              </select>
+              <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground" />
+            </div>
           </div>
-          {loadingPlans ? (
-            <p className="text-sm text-muted-foreground text-center py-6">불러오는 중...</p>
-          ) : plans.length === 0 ? (
-            <Card className="border-border shadow-none">
-              <CardContent className="py-8 text-center">
-                <p className="text-sm text-muted-foreground">등록된 큐티 일정이 없습니다.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            plans.map((plan) => (
+          {(() => {
+            const filtered = filterMonth === "all"
+              ? plans
+              : plans.filter((p) => p.date.startsWith(filterMonth));
+            return loadingPlans ? (
+              <p className="text-sm text-muted-foreground text-center py-6">불러오는 중...</p>
+            ) : filtered.length === 0 ? (
+              <Card className="border-border shadow-none">
+                <CardContent className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">등록된 큐티 일정이 없습니다.</p>
+                </CardContent>
+              </Card>
+            ) : (
+            filtered.map((plan) => (
               <Card key={plan.id} className="border-border shadow-none">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start justify-between gap-3">
@@ -148,7 +179,8 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             ))
-          )}
+          );
+          })()}
         </div>
 
         <Separator />

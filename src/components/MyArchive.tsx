@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, BookOpen, Calendar as CalendarIcon, List, Globe, Lock } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar as CalendarIcon, List, Globe, Lock, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface MyArchiveProps {
   userId: string;
   onClose: () => void;
+  onEditLog?: (date: string) => void;
 }
 
 interface ArchivedLog {
@@ -21,47 +23,58 @@ interface ArchivedLog {
 
 type ViewMode = "calendar" | "list";
 
-export default function MyArchive({ userId, onClose }: MyArchiveProps) {
+export default function MyArchive({ userId, onClose, onEditLog }: MyArchiveProps) {
   const [logs, setLogs] = useState<ArchivedLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedLog, setSelectedLog] = useState<ArchivedLog | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchLogs() {
-      setLoading(true);
-      const { data: logData } = await supabase
-        .from("qt_logs")
-        .select("id, date, meditation, application, prayer, is_public, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+  const fetchLogs = async () => {
+    setLoading(true);
+    const { data: logData } = await supabase
+      .from("qt_logs")
+      .select("id, date, meditation, application, prayer, is_public, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-      if (!logData || logData.length === 0) {
-        setLogs([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch plans for the same dates (join by MM-DD)
-      const dates = [...new Set(logData.map((l) => l.date))];
-      const { data: planData } = await supabase
-        .from("qt_plans")
-        .select("date, title, reference")
-        .in("date", dates);
-
-      const planMap = new Map(planData?.map((p) => [p.date, p]) ?? []);
-
-      setLogs(
-        logData.map((l) => ({
-          ...l,
-          planTitle: planMap.get(l.date)?.title ?? null,
-          planReference: planMap.get(l.date)?.reference ?? null,
-        }))
-      );
+    if (!logData || logData.length === 0) {
+      setLogs([]);
       setLoading(false);
+      return;
     }
-    fetchLogs();
-  }, [userId]);
+
+    const dates = [...new Set(logData.map((l) => l.date))];
+    const { data: planData } = await supabase
+      .from("qt_plans")
+      .select("date, title, reference")
+      .in("date", dates);
+
+    const planMap = new Map(planData?.map((p) => [p.date, p]) ?? []);
+
+    setLogs(
+      logData.map((l) => ({
+        ...l,
+        planTitle: planMap.get(l.date)?.title ?? null,
+        planReference: planMap.get(l.date)?.reference ?? null,
+      }))
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchLogs(); }, [userId]);
+
+  const handleDelete = async (log: ArchivedLog) => {
+    if (!confirm(`${log.date} 묵상을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+    const { error } = await supabase.from("qt_logs").delete().eq("id", log.id);
+    if (error) {
+      toast({ title: "삭제 실패", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "삭제되었습니다" });
+      setSelectedLog(null);
+      setLogs((prev) => prev.filter((l) => l.id !== log.id));
+    }
+  };
 
   // Calendar view helpers
   const logsByYearMonth = new Map<string, Map<string, ArchivedLog>>();
@@ -150,7 +163,12 @@ export default function MyArchive({ userId, onClose }: MyArchiveProps) {
 
       {/* Detail modal */}
       {selectedLog && (
-        <LogDetailModal log={selectedLog} onClose={() => setSelectedLog(null)} />
+        <LogDetailModal
+          log={selectedLog}
+          onClose={() => setSelectedLog(null)}
+          onEdit={onEditLog ? (date) => { setSelectedLog(null); onEditLog(date); } : undefined}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );
@@ -170,7 +188,7 @@ function ArchiveListItem({ log, onClick }: { log: ArchivedLog; onClick: () => vo
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="text-[10px] font-bold text-primary bg-primary/8 px-1.5 py-0.5 rounded">
-            {log.date}
+            {log.date.slice(5)}
           </span>
           {log.planReference && (
             <span className="text-[10px] font-medium text-muted-foreground/60 truncate">
@@ -220,7 +238,7 @@ function CalendarMonth({ ym, logMap, onSelectLog }: {
         {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
-          const key = `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const key = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const log = logMap.get(key);
           return (
             <button
@@ -242,7 +260,12 @@ function CalendarMonth({ ym, logMap, onSelectLog }: {
   );
 }
 
-function LogDetailModal({ log, onClose }: { log: ArchivedLog; onClose: () => void }) {
+function LogDetailModal({ log, onClose, onEdit, onDelete }: {
+  log: ArchivedLog;
+  onClose: () => void;
+  onEdit?: (date: string) => void;
+  onDelete: (log: ArchivedLog) => void;
+}) {
   const dateStr = new Date(log.created_at).toLocaleDateString("ko-KR", {
     year: "numeric", month: "long", day: "numeric", weekday: "long",
   });
@@ -294,8 +317,28 @@ function LogDetailModal({ log, onClose }: { log: ArchivedLog; onClose: () => voi
             </div>
           )}
 
-          <div className="pt-2 border-t border-border/30 flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
-            {log.is_public ? <><Globe className="w-3 h-3" />공개됨</> : <><Lock className="w-3 h-3" />비공개</>}
+          <div className="pt-2 border-t border-border/30 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+              {log.is_public ? <><Globe className="w-3 h-3" />공개됨</> : <><Lock className="w-3 h-3" />비공개</>}
+            </div>
+            <div className="flex items-center gap-2">
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(log.date)}
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  수정
+                </button>
+              )}
+              <button
+                onClick={() => onDelete(log)}
+                className="flex items-center gap-1.5 text-[12px] font-medium text-destructive/70 hover:bg-destructive/10 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                삭제
+              </button>
+            </div>
           </div>
         </div>
       </div>

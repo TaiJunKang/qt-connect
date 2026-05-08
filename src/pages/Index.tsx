@@ -19,6 +19,7 @@ const Index = () => {
   const [displayName, setDisplayName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [writeDate, setWriteDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ const Index = () => {
 
     const checkAndNotify = async () => {
       const now = new Date();
-      const todayKey = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
       const { data } = await supabase
         .from("qt_logs")
@@ -93,9 +94,9 @@ const Index = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomeTab onWriteClick={() => setActiveTab("write")} userId={user.id} />;
+        return <HomeTab onWriteClick={() => { setWriteDate(undefined); setActiveTab("write"); }} userId={user.id} />;
       case "write":
-        return <WriteTab userId={user.id} userDisplayName={displayName} />;
+        return <WriteTab key={writeDate} userId={user.id} userDisplayName={displayName} initialDate={writeDate} />;
       case "community":
         return <CommunityTab userId={user.id} userDisplayName={displayName} />;
       case "ranking":
@@ -111,6 +112,10 @@ const Index = () => {
               setUser(null);
               setActiveTab("home");
             }}
+            onEditLog={(date) => {
+              setWriteDate(date);
+              setActiveTab("write");
+            }}
           />
         );
     }
@@ -119,7 +124,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background md:flex">
       {/* Desktop sidebar — hidden on mobile */}
-      <DesktopSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <DesktopSidebar activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
 
       {/* Main content area */}
       <div className="flex-1 md:ml-60">
@@ -131,7 +136,7 @@ const Index = () => {
       </div>
 
       {/* Bottom navigation — hidden on desktop */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
 
       {/* PWA install prompt */}
       <InstallPrompt />

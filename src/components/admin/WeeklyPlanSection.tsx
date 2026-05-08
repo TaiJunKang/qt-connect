@@ -31,6 +31,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
   const [bulkSaving, setBulkSaving] = useState(false);
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [savingDraftIndex, setSavingDraftIndex] = useState<number | null>(null);
+  const [generateCooldown, setGenerateCooldown] = useState(false);
 
   // Load existing drafts on mount
   const fetchDrafts = useCallback(async () => {
@@ -79,7 +80,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
         .insert({
           title: sermonTitle.trim(),
           content: sermonContent.trim(),
-          sermon_date: format(startDate, "MM-dd"),
+          sermon_date: format(startDate, "yyyy-MM-dd"),
         })
         .select("id")
         .single();
@@ -142,6 +143,8 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
       toast({ title: "생성 실패", description: msg, variant: "destructive" });
     } finally {
       setGenerating(false);
+      setGenerateCooldown(true);
+      setTimeout(() => setGenerateCooldown(false), 5000);
     }
   };
 
@@ -251,7 +254,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "MM월 dd일") : "날짜 선택"}
+                  {startDate ? format(startDate, "yyyy년 MM월 dd일") : "날짜 선택"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -272,6 +275,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
               placeholder="예: 믿음의 여정, 은혜의 능력"
               value={sermonTitle}
               onChange={(e) => setSermonTitle(e.target.value)}
+              maxLength={200}
               className="h-10 text-sm"
             />
           </div>
@@ -282,6 +286,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
               placeholder="주일 설교 원고를 붙여넣기 해 주세요..."
               value={sermonContent}
               onChange={(e) => setSermonContent(e.target.value)}
+              maxLength={10000}
               className="min-h-[200px] text-sm leading-relaxed resize-y"
             />
             {sermonContent.length > 0 && (
@@ -293,7 +298,7 @@ export default function WeeklyPlanSection({ onRegistered }: WeeklyPlanSectionPro
 
           <Button
             onClick={handleGenerate}
-            disabled={generating || !startDate || !sermonContent.trim()}
+            disabled={generating || generateCooldown || !startDate || !sermonContent.trim()}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-5 text-sm font-medium rounded-xl flex items-center gap-2"
           >
             {generating ? (

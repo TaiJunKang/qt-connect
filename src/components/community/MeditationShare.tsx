@@ -1,19 +1,22 @@
 import { useEffect, useState, useCallback } from "react";
-import { Users, RefreshCw, MessageCircle } from "lucide-react";
+import { Users, RefreshCw, MessageCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { getAvatarColor } from "./avatar";
 import LikeButton from "./LikeButton";
 import CommentSection from "./CommentSection";
 
 function getTodayKey() {
   const d = new Date();
+  const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 interface QTLog {
   id: string;
+  user_id: string;
   user_name: string;
   meditation: string;
   application: string;
@@ -31,9 +34,27 @@ interface MeditationShareProps {
 function LogCard({ log, userId, userDisplayName, onChange }: { log: QTLog; userId: string; userDisplayName: string; onChange: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const { toast } = useToast();
   const initial = log.user_name?.charAt(0) || "?";
   const time = new Date(log.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   const avatarColor = getAvatarColor(log.user_name || "");
+  const isOwner = log.user_id === userId;
+
+  const handleDelete = async () => {
+    if (!confirm("이 묵상 나눔을 삭제할까요?")) return;
+    try {
+      const { error } = await supabase
+        .from("qt_logs")
+        .update({ is_public: false })
+        .eq("id", log.id);
+      if (error) throw error;
+      onChange();
+      toast({ title: "나눔이 비공개로 전환되었어요" });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "삭제 실패";
+      toast({ title: msg, variant: "destructive" });
+    }
+  };
 
   const meditationLong = (log.meditation?.length ?? 0) > 120;
   const applicationLong = (log.application?.length ?? 0) > 100;
@@ -101,6 +122,16 @@ function LogCard({ log, userId, userDisplayName, onChange }: { log: QTLog; userI
             <MessageCircle className="w-3 h-3" />
             {log.comment_count > 0 && <span>{log.comment_count}</span>}
           </button>
+
+          {isOwner && (
+            <button
+              onClick={handleDelete}
+              className="w-7 h-7 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center ml-auto"
+              title="나눔 삭제"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Comments */}
@@ -128,7 +159,7 @@ export default function MeditationShare({ userId, userDisplayName }: MeditationS
     // 1. Fetch public QT logs for today
     const { data: logData } = await supabase
       .from("qt_logs")
-      .select("id, user_name, meditation, application, created_at")
+      .select("id, user_id, user_name, meditation, application, created_at")
       .eq("date", todayKey)
       .eq("is_public", true)
       .order("created_at", { ascending: false });

@@ -23,9 +23,10 @@ interface SettingsTabProps {
   userId: string;
   isAdmin: boolean;
   onSignOut: () => void;
+  onEditLog?: (date: string) => void;
 }
 
-export default function SettingsTab({ email, displayName, userId, isAdmin, onSignOut }: SettingsTabProps) {
+export default function SettingsTab({ email, displayName, userId, isAdmin, onSignOut, onEditLog }: SettingsTabProps) {
   const [showArchive, setShowArchive] = useState(false);
   const [showReadingPlan, setShowReadingPlan] = useState(false);
   const [showCardNews, setShowCardNews] = useState(false);
@@ -66,7 +67,7 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, onSig
   const initial = displayName?.charAt(0) || email?.charAt(0) || "?";
 
   if (showArchive) {
-    return <MyArchive userId={userId} onClose={() => setShowArchive(false)} />;
+    return <MyArchive userId={userId} onClose={() => setShowArchive(false)} onEditLog={(date) => { setShowArchive(false); onEditLog?.(date); }} />;
   }
 
   if (showReadingPlan) {

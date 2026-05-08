@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Save, Lightbulb, ChevronDown, ChevronUp, Lock, Globe, Pen } from "lucide-react";
+import { BookOpen, Save, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Lock, Globe, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -7,11 +7,17 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-function getTodayKey() {
-  const d = new Date();
+function getDateKey(d: Date) {
+  const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  return `${mm}-${dd}`;
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function addDays(d: Date, n: number) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
 }
 
 interface Plan {
@@ -24,10 +30,21 @@ interface Plan {
 interface WriteTabProps {
   userId: string;
   userDisplayName: string;
+  initialDate?: string; // YYYY-MM-DD
 }
 
-export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
-  const todayKey = getTodayKey();
+export default function WriteTab({ userId, userDisplayName, initialDate }: WriteTabProps) {
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (initialDate) {
+      const [y, m, d] = initialDate.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return today;
+  });
+  const dateKey = getDateKey(selectedDate);
+  const isToday = getDateKey(today) === dateKey;
+
   const [plan, setPlan] = useState<Plan | null>(null);
   const [meditation, setMeditation] = useState("");
   const [application, setApplication] = useState("");
@@ -36,27 +53,33 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
   const [saving, setSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
   const [scriptureExpanded, setScriptureExpanded] = useState(true);
-  const [commentaryExpanded, setCommentaryExpanded] = useState(false);
+  const [commentaryExpanded, setCommentaryExpanded] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    setPlan(null);
     (async () => {
       const { data } = await supabase
         .from("qt_plans")
         .select("title, reference, text, commentary")
-        .eq("date", todayKey)
+        .eq("date", dateKey)
         .maybeSingle();
       if (data) setPlan(data as Plan);
     })();
-  }, [todayKey]);
+  }, [dateKey]);
 
   useEffect(() => {
+    setMeditation("");
+    setApplication("");
+    setPrayer("");
+    setIsPublic(false);
+    setHasSaved(false);
     (async () => {
       const { data } = await supabase
         .from("qt_logs")
         .select("id, meditation, application, prayer, is_public")
         .eq("user_id", userId)
-        .eq("date", todayKey)
+        .eq("date", dateKey)
         .maybeSingle();
       if (data) {
         setMeditation(data.meditation || "");
@@ -66,26 +89,29 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
         setHasSaved(true);
       }
     })();
-  }, [userId, todayKey]);
+  }, [userId, dateKey]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const trimmedMeditation = meditation.trim();
+      const trimmedApplication = application.trim();
+      const trimmedPrayer = prayer.trim();
       const payload = {
         user_id: userId,
         user_name: userDisplayName,
-        date: todayKey,
-        meditation,
-        application,
-        prayer,
+        date: dateKey,
+        meditation: trimmedMeditation,
+        application: trimmedApplication,
+        prayer: trimmedPrayer,
         is_public: isPublic,
       };
       if (hasSaved) {
         const { error } = await supabase
           .from("qt_logs")
-          .update({ meditation, application, prayer, is_public: isPublic })
+          .update({ meditation: trimmedMeditation, application: trimmedApplication, prayer: trimmedPrayer, is_public: isPublic })
           .eq("user_id", userId)
-          .eq("date", todayKey);
+          .eq("date", dateKey);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("qt_logs").insert(payload);
@@ -109,7 +135,6 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
       placeholder: "말씀을 통해 발견한 하나님의 성품, 하신 일, 약속을 적어보세요.",
       value: meditation,
       onChange: setMeditation,
-      color: "text-violet-600 bg-violet-500/10 border-violet-200/50",
     },
     {
       key: "application",
@@ -118,7 +143,6 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
       placeholder: "오늘 말씀을 내 삶에 어떻게 적용할 수 있을까요?",
       value: application,
       onChange: setApplication,
-      color: "text-blue-600 bg-blue-500/10 border-blue-200/50",
     },
     {
       key: "prayer",
@@ -127,42 +151,56 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
       placeholder: "오늘 하나님께 드리는 기도를 적어보세요.",
       value: prayer,
       onChange: setPrayer,
-      color: "text-amber-600 bg-amber-500/10 border-amber-200/50",
     },
   ];
 
   return (
-    <div className="px-4 pt-7 pb-6 space-y-5 max-w-lg mx-auto md:max-w-2xl md:px-6">
+    <div className="px-5 pt-3 pb-8 space-y-6 max-w-lg mx-auto md:max-w-2xl md:px-6">
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
-          <Pen className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <div>
-          <p className="text-[11px] text-muted-foreground font-medium tracking-[0.1em] uppercase">
-            {new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}
-          </p>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">큐티 작성</h1>
-        </div>
+      <div>
+        <h1 className="text-[22px] font-bold text-foreground tracking-tight">큐티 작성</h1>
+      </div>
+
+      {/* ── Date navigation ── */}
+      <div className="flex items-center gap-3 -mt-2">
+        <button
+          onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-[14px] text-foreground/80 font-medium flex-1 text-center">
+          {selectedDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}
+        </span>
+        <button
+          onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        {!isToday && (
+          <button
+            onClick={() => setSelectedDate(today)}
+            className="text-[13px] text-primary font-semibold px-3 py-1.5 rounded-full bg-primary/8 hover:bg-primary/15 transition-colors"
+          >
+            오늘
+          </button>
+        )}
       </div>
 
       {/* ── Scripture block (collapsible) ── */}
       {plan && (
-        <div className="rounded-2xl bg-card border border-border/40 shadow-card overflow-hidden">
-          <div className="h-1 bg-gradient-to-r from-primary/60 via-primary to-primary/40" />
+        <div className="rounded-2xl bg-card overflow-hidden">
           <button
-            className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-accent/30 transition-colors"
+            className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-accent/40 transition-colors"
             onClick={() => setScriptureExpanded((v) => !v)}
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center flex-shrink-0 border border-primary/10">
-              <BookOpen className="w-4 h-4 text-primary" />
-            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-primary/60 tracking-[0.15em] uppercase bg-primary/5 inline-block px-1.5 py-0.5 rounded">
+              <p className="text-[12px] font-medium text-primary mb-0.5">
                 {plan.reference}
               </p>
-              <p className="text-[13px] font-semibold text-foreground leading-snug truncate mt-0.5">
+              <p className="text-[14px] font-semibold text-foreground leading-snug truncate">
                 {plan.title}
               </p>
             </div>
@@ -172,11 +210,8 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
           </button>
 
           {scriptureExpanded && plan.text && (
-            <div
-              className="mx-4 mb-4 rounded-xl px-4 py-4 border-l-gold"
-              style={{ background: "hsl(var(--scripture-bg))" }}
-            >
-              <p className="text-[13px] text-foreground/75 leading-[2] whitespace-pre-line font-scripture">
+            <div className="mx-4 mb-4 rounded-xl bg-secondary/50 px-5 py-4">
+              <p className="text-[13.5px] text-foreground/70 leading-[1.85] whitespace-pre-line">
                 {plan.text}
               </p>
             </div>
@@ -186,15 +221,12 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
 
       {/* ── Commentary (collapsible) ── */}
       {plan?.commentary && (
-        <div className="rounded-2xl bg-card border border-border/40 shadow-xs overflow-hidden">
+        <div className="rounded-2xl bg-card overflow-hidden">
           <button
-            className="w-full flex items-center gap-2.5 px-5 py-3.5 text-left hover:bg-accent/30 transition-colors"
+            className="w-full flex items-center gap-2.5 px-5 py-3.5 text-left hover:bg-accent/40 transition-colors"
             onClick={() => setCommentaryExpanded((v) => !v)}
           >
-            <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-            </div>
-            <span className="text-[11px] font-bold text-amber-700/70 tracking-[0.12em] uppercase flex-1">
+            <span className="text-[13px] font-bold text-foreground/80 flex-1">
               묵상 길잡이
             </span>
             {commentaryExpanded
@@ -202,68 +234,103 @@ export default function WriteTab({ userId, userDisplayName }: WriteTabProps) {
               : <ChevronDown className="w-4 h-4 text-muted-foreground/40" />}
           </button>
           {commentaryExpanded && (
-            <p className="px-5 pb-4 text-[13px] text-foreground/70 leading-[1.9] whitespace-pre-line font-scripture">
-              {plan.commentary}
-            </p>
+            <div className="px-5 pb-4 space-y-3">
+              {plan.commentary.split(/\n\n+/).map((section, i) => {
+                const trimmed = section.trim();
+                if (!trimmed) return null;
+                const headerMatch = trimmed.match(/^(오늘의 핵심|묵상 질문|🙏\s*.+)\n([\s\S]*)$/);
+                if (headerMatch) {
+                  return (
+                    <div key={i}>
+                      <p className="text-[12px] font-semibold text-primary mb-1">
+                        {headerMatch[1].replace(/^🙏\s*/, '')}
+                      </p>
+                      <p className="text-[13.5px] text-foreground/60 leading-[1.85] whitespace-pre-line">
+                        {headerMatch[2].trim()}
+                      </p>
+                    </div>
+                  );
+                }
+                if (trimmed.includes("?") && trimmed.split("\n").every((l: string) => !l.trim() || l.trim().endsWith("?"))) {
+                  return (
+                    <div key={i} className="rounded-xl bg-secondary/50 px-4 py-3 space-y-2">
+                      {trimmed.split("\n").filter((l: string) => l.trim()).map((q: string, qi: number) => (
+                        <p key={qi} className="text-[12.5px] text-foreground/65 leading-relaxed">{q.trim()}</p>
+                      ))}
+                    </div>
+                  );
+                }
+                return <p key={i} className="text-[13.5px] text-foreground/60 leading-[1.85] whitespace-pre-line">{trimmed}</p>;
+              })}
+            </div>
           )}
         </div>
       )}
 
       {/* ── Divider ── */}
       <div className="flex items-center gap-3 py-1">
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-        <span className="text-[10px] text-muted-foreground/60 tracking-[0.15em] uppercase font-semibold">나의 묵상</span>
-        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-[12px] text-muted-foreground font-medium">나의 묵상</span>
+        <div className="flex-1 h-px bg-border" />
       </div>
 
       {/* ── Form fields ── */}
       <div className="space-y-4">
-        {formFields.map(({ key, label, subtitle, placeholder, value, onChange, color }) => (
-          <div key={key} className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${color}`}>
+        {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
+          <div key={key}>
+            <div className="flex items-baseline gap-1.5 mb-2 px-1">
+              <span className="text-[13px] font-semibold text-foreground">
                 {label}
               </span>
-              <span className="text-[11px] text-muted-foreground/60">{subtitle}</span>
-            </Label>
+              <span className="text-[11px] text-muted-foreground/70">{subtitle}</span>
+            </div>
             <Textarea
               placeholder={placeholder}
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className="min-h-[120px] bg-card border-border/50 rounded-xl resize-none leading-7 text-[14px] placeholder:text-muted-foreground/35 shadow-xs focus-visible:ring-primary/30 focus-visible:border-primary/30 transition-all"
+              className="min-h-[140px] bg-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
             />
           </div>
         ))}
       </div>
 
       {/* ── Public toggle ── */}
-      <div className="rounded-2xl bg-card border border-border/40 shadow-card px-5 py-4 flex items-center justify-between gap-4">
+      <div className="rounded-2xl bg-card px-5 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-            isPublic ? "bg-emerald-500/10" : "bg-muted/60"
-          }`}>
-            {isPublic
-              ? <Globe className="w-4 h-4 text-emerald-600" />
-              : <Lock className="w-4 h-4 text-muted-foreground" />
-            }
-          </div>
+          {isPublic
+            ? <Globe className="w-[18px] h-[18px] text-primary" />
+            : <Lock className="w-[18px] h-[18px] text-muted-foreground" />
+          }
           <div>
-            <p className="text-[13px] font-medium text-foreground">공동체와 함께 나누기</p>
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5">묵상/적용만 공유 (기도는 비공개)</p>
+            <p className="text-[14px] font-medium text-foreground">공동체와 함께 나누기</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">묵상/적용만 공유 (기도는 비공개)</p>
           </div>
         </div>
         <Switch checked={isPublic} onCheckedChange={setIsPublic} />
       </div>
 
-      {/* ── Save button ── */}
-      <Button
-        onClick={handleSave}
-        disabled={saving}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl py-6 text-[15px] font-semibold shadow-soft flex items-center justify-center gap-2.5 tracking-tight transition-all hover:shadow-glow"
-      >
-        <Save className="w-4.5 h-4.5" />
-        {saving ? "저장 중..." : hasSaved ? "수정하기" : "저장하기"}
-      </Button>
+      {/* ── Action buttons ── */}
+      <div className="flex gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
+        >
+          <Save className="w-[18px] h-[18px]" />
+          {saving ? "저장 중..." : hasSaved ? "수정하기" : "저장하기"}
+        </button>
+        {hasSaved && typeof navigator !== "undefined" && navigator.share && (
+          <button
+            onClick={() => {
+              const text = [`[QT Connect] ${dateKey}`, plan?.reference, plan?.title, '', '묵상: ' + meditation.slice(0, 100), '적용: ' + application.slice(0, 100)].filter(Boolean).join('\n');
+              navigator.share({ title: 'QT 나눔', text }).catch(() => {});
+            }}
+            className="w-14 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl flex items-center justify-center transition-colors active:scale-[0.98]"
+          >
+            <Share2 className="w-[18px] h-[18px]" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -18,22 +18,25 @@ interface StatsData {
   badges: BadgeWithStatus[];
 }
 
+function getDateKey(d: Date) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function calcStreaks(sortedDates: string[]): { current: number; longest: number } {
   if (sortedDates.length === 0) return { current: 0, longest: 0 };
 
-  // Convert MM-DD dates with year context to Date objects for comparison
-  // Since dates are MM-DD format, we need created_at for proper year context
-  // For streak calculation, we'll work with the raw dates in reverse chronological order
   let current = 0;
   let longest = 0;
   let streak = 1;
 
-  // Check if today or yesterday is in the list (for current streak)
   const now = new Date();
-  const todayKey = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayKey = getDateKey(now);
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = `${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+  const yesterdayKey = getDateKey(yesterday);
 
   const dateSet = new Set(sortedDates);
   const hasToday = dateSet.has(todayKey);
@@ -46,8 +49,7 @@ function calcStreaks(sortedDates: string[]): { current: number; longest: number 
     const check = new Date(startDate);
     check.setDate(check.getDate() - 1);
     while (true) {
-      const key = `${String(check.getMonth() + 1).padStart(2, "0")}-${String(check.getDate()).padStart(2, "0")}`;
-      if (dateSet.has(key)) {
+      if (dateSet.has(getDateKey(check))) {
         current++;
         check.setDate(check.getDate() - 1);
       } else {
@@ -56,19 +58,15 @@ function calcStreaks(sortedDates: string[]): { current: number; longest: number 
     }
   }
 
-  // Calculate longest streak
-  // Sort unique dates and check consecutive days
+  // Calculate longest streak (YYYY-MM-DD sorts lexicographically)
   const uniqueDates = [...dateSet].sort();
   if (uniqueDates.length > 0) {
     streak = 1;
     longest = 1;
     for (let i = 1; i < uniqueDates.length; i++) {
-      // Parse MM-DD and check if consecutive
-      const [pm, pd] = uniqueDates[i - 1].split("-").map(Number);
-      const [cm, cd] = uniqueDates[i].split("-").map(Number);
-      const prevDate = new Date(now.getFullYear(), pm - 1, pd);
-      const currDate = new Date(now.getFullYear(), cm - 1, cd);
-      const diff = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+      const prev = new Date(uniqueDates[i - 1] + "T00:00:00");
+      const curr = new Date(uniqueDates[i] + "T00:00:00");
+      const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
       if (diff === 1) {
         streak++;
         longest = Math.max(longest, streak);
@@ -103,15 +101,15 @@ export default function MyStats({ userId }: MyStatsProps) {
       const { current, longest } = calcStreaks(uniqueDates);
 
       const now = new Date();
-      const thisMonth = String(now.getMonth() + 1).padStart(2, "0");
+      const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      const thisMonthDates = uniqueDates.filter((d) => d.startsWith(`${thisMonth}-`));
+      const thisMonthDates = uniqueDates.filter((d) => d.startsWith(`${thisMonthPrefix}-`));
 
       // Build heatmap for current month
       const heatmap = Array(daysInMonth).fill(0);
       const thisMonthSet = new Set(thisMonthDates);
       for (let day = 1; day <= daysInMonth; day++) {
-        const key = `${thisMonth}-${String(day).padStart(2, "0")}`;
+        const key = `${thisMonthPrefix}-${String(day).padStart(2, "0")}`;
         if (thisMonthSet.has(key)) heatmap[day - 1] = 1;
       }
 
