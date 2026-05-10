@@ -9,6 +9,8 @@ interface Announcement {
   category: string;
   is_pinned: boolean;
   created_at: string;
+  publish_start: string | null;
+  publish_end: string | null;
 }
 
 const CATEGORY_CONFIG: Record<string, { icon: typeof Info; label: string; color: string }> = {
@@ -28,9 +30,12 @@ export default function AnnouncementBanner() {
 
   useEffect(() => {
     async function fetch() {
+      const today = new Date().toISOString().slice(0, 10);
       const { data } = await supabase
         .from("announcements")
-        .select("id, title, content, category, is_pinned, created_at")
+        .select("id, title, content, category, is_pinned, created_at, publish_start, publish_end")
+        .or(`publish_start.is.null,publish_start.lte.${today}`)
+        .or(`publish_end.is.null,publish_end.gte.${today}`)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(5);

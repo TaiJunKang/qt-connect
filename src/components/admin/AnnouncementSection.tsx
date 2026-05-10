@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { Megaphone, Plus, Pin, Trash2, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Megaphone, Plus, Pin, Trash2, Loader2, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface Announcement {
   id: string;
@@ -17,6 +21,8 @@ interface Announcement {
   category: string;
   is_pinned: boolean;
   created_at: string;
+  publish_start: string | null;
+  publish_end: string | null;
 }
 
 const CATEGORIES = [
@@ -36,6 +42,8 @@ export default function AnnouncementSection() {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("general");
   const [isPinned, setIsPinned] = useState(false);
+  const [publishStart, setPublishStart] = useState<Date | undefined>(undefined);
+  const [publishEnd, setPublishEnd] = useState<Date | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchAnnouncements = useCallback(async () => {
@@ -67,11 +75,14 @@ export default function AnnouncementSection() {
         content: content.trim(),
         category,
         is_pinned: isPinned,
+        publish_start: publishStart ? format(publishStart, "yyyy-MM-dd") : null,
+        publish_end: publishEnd ? format(publishEnd, "yyyy-MM-dd") : null,
       });
       if (error) throw error;
 
       toast({ title: "공지사항이 등록되었습니다" });
       setTitle(""); setContent(""); setCategory("general"); setIsPinned(false);
+      setPublishStart(undefined); setPublishEnd(undefined);
       setComposerOpen(false);
       fetchAnnouncements();
     } catch (e) {
@@ -142,7 +153,11 @@ export default function AnnouncementSection() {
                       {CATEGORIES.find((c) => c.id === a.category)?.label ?? "공지"}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {new Date(a.created_at).toLocaleDateString("ko-KR")}
+                      {a.publish_start && a.publish_end
+                        ? `${a.publish_start} ~ ${a.publish_end}`
+                        : a.publish_start
+                          ? `${a.publish_start} ~`
+                          : new Date(a.created_at).toLocaleDateString("ko-KR")}
                     </span>
                   </div>
                   <p className="text-sm font-medium text-foreground">{a.title}</p>
@@ -228,6 +243,67 @@ export default function AnnouncementSection() {
                 className="min-h-[100px] resize-none text-sm"
                 maxLength={1000}
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-wider">
+                게시 기간 <span className="text-muted-foreground/40 normal-case">(선택)</span>
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`h-10 justify-start text-left text-sm font-normal ${!publishStart && "text-muted-foreground"}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {publishStart ? format(publishStart, "yyyy.MM.dd") : "시작일"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={publishStart}
+                      onSelect={setPublishStart}
+                      locale={ko}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`h-10 justify-start text-left text-sm font-normal ${!publishEnd && "text-muted-foreground"}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {publishEnd ? format(publishEnd, "yyyy.MM.dd") : "종료일"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={publishEnd}
+                      onSelect={setPublishEnd}
+                      disabled={(date) => publishStart ? date < publishStart : false}
+                      locale={ko}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {publishStart && (
+                <button
+                  type="button"
+                  onClick={() => { setPublishStart(undefined); setPublishEnd(undefined); }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                >
+                  기간 설정 초기화
+                </button>
+              )}
+              <p className="text-[10px] text-muted-foreground/50">
+                미설정 시 삭제 전까지 항상 게시됩니다.
+              </p>
             </div>
 
             <div className="flex items-center justify-between rounded-xl bg-muted/40 border border-border/30 px-4 py-3">

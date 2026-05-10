@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, BookOpen, ShieldCheck, ChevronDown, Pencil, X, Save, Loader2 } from "lucide-react";
-import WeeklyPlanSection from "@/components/admin/WeeklyPlanSection";
 import AnnouncementSection from "@/components/admin/AnnouncementSection";
 
 interface QtPlan {
@@ -139,9 +138,6 @@ export default function AdminPage() {
         <AnnouncementSection />
 
         <Separator />
-
-        {/* Weekly plan section */}
-        <WeeklyPlanSection onRegistered={fetchPlans} />
 
         {/* Registered plans list */}
         <div className="space-y-3">

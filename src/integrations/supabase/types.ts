@@ -21,6 +21,8 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean
+          publish_end: string | null
+          publish_start: string | null
           title: string
           updated_at: string
           user_id: string
@@ -31,6 +33,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          publish_end?: string | null
+          publish_start?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -41,6 +45,8 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          publish_end?: string | null
+          publish_start?: string | null
           title?: string
           updated_at?: string
           user_id?: string
