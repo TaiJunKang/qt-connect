@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { LogOut, User, ShieldCheck, ChevronRight, Bell, BellOff, Settings, BookMarked, BookOpenCheck, Moon, Sun, ImageIcon, Camera, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { getAvatarColor } from "./community/avatar";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -148,8 +149,8 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-primary flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-foreground">{initial}</span>
+                <div className={`w-full h-full flex items-center justify-center ${getAvatarColor(displayName || "")}`}>
+                  <span className="text-2xl font-bold">{initial}</span>
                 </div>
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

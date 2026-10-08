@@ -127,7 +127,7 @@ export default function RankingTab({ userId }: RankingTabProps) {
         </p>
         <div className="flex items-baseline gap-1.5">
           <span className="text-[44px] font-extrabold tracking-[-0.03em] leading-none tabular-nums">{loading ? "–" : total}</span>
-          <span className="text-[16px] font-medium opacity-75">일{prevTotal > 0 && ` / ${prevLabel} ${prevTotal}일`}</span>
+          <span className="text-[16px] font-medium opacity-75">번{prevTotal > 0 && ` / ${prevLabel} ${prevTotal}번`}</span>
         </div>
         {prevTotal > 0 && (
           <div className="h-2.5 rounded-full bg-background/20 overflow-hidden" role="img" aria-label={`${prevLabel} 대비 ${ratio}%`}>
