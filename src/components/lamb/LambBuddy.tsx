@@ -71,7 +71,7 @@ export default function LambBuddy({ userId, raised = false }: LambBuddyProps) {
       {open && (
         <div className="absolute bottom-full right-0 mb-2 w-[min(300px,calc(100vw-24px))] rounded-[22px] bg-card border border-border shadow-glow p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <div className="w-[84px] h-[84px] rounded-2xl bg-secondary flex-shrink-0">
+            <div className="w-[96px] h-[96px] rounded-2xl bg-secondary flex-shrink-0">
               <LambSvg stage={index} happy={happy} className="w-full h-full" />
             </div>
             <div className="flex-1 min-w-0">
@@ -116,7 +116,7 @@ export default function LambBuddy({ userId, raised = false }: LambBuddyProps) {
         onClick={toggle}
         aria-expanded={open}
         aria-label={`나의 ${stage.name}, ${happy ? "오늘 큐티 완료" : "오늘 큐티 전"}. 눌러서 성장 현황 보기`}
-        className="block w-[60px] h-[60px] active:scale-95 transition-transform"
+        className="block w-[76px] h-[76px] md:w-[84px] md:h-[84px] active:scale-95 transition-transform"
       >
         {/* 작은 단계도 잘 보이도록 떠다니는 양은 덜 작게 (실제 크기 차이는 카드에서) */}
         <LambSvg stage={index} happy={happy} className="w-full h-full origin-bottom drop-shadow-[0_2px_3px_rgba(59,46,37,0.12)]"
