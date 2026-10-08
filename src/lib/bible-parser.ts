@@ -5,6 +5,8 @@
  *   창1:2 땅이 혼돈하고...
  */
 
+import { BIBLE_BOOKS } from "./bible-books";
+
 let bibleTextCache: string | null = null;
 let loadPromise: Promise<string> | null = null;
 
@@ -151,4 +153,61 @@ export function getWeekDates(startDate: Date): string[] {
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   });
+}
+
+export interface ChapterRef {
+  book: string; // 약어 (창, 출 …)
+  startCh: number;
+  endCh: number;
+}
+
+/** "창세기 1~2장", "열왕기하 19장 이사야 37장" → 장 범위 목록 */
+export function parseReference(ref: string): ChapterRef[] {
+  const results: ChapterRef[] = [];
+  let currentBook = "";
+  for (const part of ref.split(/\s+/)) {
+    const found = BIBLE_BOOKS.find((b) => part.startsWith(b.name) || part === b.abbr);
+    if (found) {
+      currentBook = found.abbr;
+      const chPart = part.slice(found.name.length).trim();
+      const m = chPart && chPart.match(/(\d+)(?:[~-](\d+))?/);
+      if (m) results.push({ book: currentBook, startCh: +m[1], endCh: +(m[2] || m[1]) });
+      continue;
+    }
+    if (currentBook) {
+      const m = part.match(/(\d+)(?:[~-](\d+))?(?:장)?/);
+      if (m) results.push({ book: currentBook, startCh: +m[1], endCh: +(m[2] || m[1]) });
+    }
+  }
+  return results;
+}
+
+export interface Verse {
+  chapter: number;
+  verse: string | null; // "3", 합쳐진 절은 "18-19", 절 번호가 떨어져 나간 줄은 null
+  text: string;
+  heading?: string; // <천지 창조> 같은 소제목
+}
+
+/** 장 범위의 본문을 절 단위로 반환 (성경 파일은 한 번만 내려받아 캐시) */
+export async function loadChapters(refs: ChapterRef[]): Promise<Verse[]> {
+  const lines = (await loadBibleText()).split("\n");
+  const verses: Verse[] = [];
+  for (const { book, startCh, endCh } of refs) {
+    for (let ch = startCh; ch <= endCh; ch++) {
+      const prefix = `${book}${ch}:`;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith(prefix)) continue;
+        const rest = trimmed.slice(prefix.length);
+        const m = rest.match(/^(\d+(?:-\d+)?)\s*([\s\S]*)$/);
+        const body = m ? m[2] : rest;
+        // 소제목 <…>은 문장 중간에 끼어 있는 경우도 있어 꺼내서 따로 표시
+        const heading = body.match(/<([^>]*)>/)?.[1].trim() || undefined;
+        const text = body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        verses.push({ chapter: ch, verse: m ? m[1] : null, heading, text });
+      }
+    }
+  }
+  return verses;
 }

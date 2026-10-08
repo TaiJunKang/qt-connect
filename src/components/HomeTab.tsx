@@ -5,58 +5,8 @@ import { calcStreaks } from "@/lib/streak";
 import BibleSearch from "./BibleSearch";
 import WeeklyReview from "./WeeklyReview";
 import AnnouncementBanner from "./AnnouncementBanner";
-import { BIBLE_BOOKS } from "@/lib/bible-books";
-
-/** "창세기 1~2장" → [{book:"창", startChapter:1, endChapter:2}] */
-function parseReference(ref: string): { book: string; startCh: number; endCh: number }[] {
-  const results: { book: string; startCh: number; endCh: number }[] = [];
-  // Split by space to handle multi-book references like "열왕기하 19장 이사야 37장"
-  const parts = ref.split(/\s+/);
-  let currentBook = "";
-  for (const part of parts) {
-    // Check if it's a book name
-    const found = BIBLE_BOOKS.find(b => part.startsWith(b.name) || part === b.abbr);
-    if (found) {
-      currentBook = found.abbr;
-      // Check if chapter info is attached (e.g., "창세기" followed by "1~2장")
-      const chPart = part.slice(found.name.length).trim();
-      if (chPart) {
-        const m = chPart.match(/(\d+)(?:[~\-](\d+))?/);
-        if (m) results.push({ book: currentBook, startCh: +m[1], endCh: +(m[2] || m[1]) });
-      }
-      continue;
-    }
-    // Check if it's a chapter range (e.g., "1~2장", "3장", "1:1~8")
-    if (currentBook) {
-      const m = part.match(/(\d+)(?:[~\-](\d+))?(?:장)?/);
-      if (m) results.push({ book: currentBook, startCh: +m[1], endCh: +(m[2] || m[1]) });
-    }
-  }
-  return results;
-}
-
-async function loadBibleChapters(refs: { book: string; startCh: number; endCh: number }[]): Promise<string> {
-  const response = await fetch('/bible.txt');
-  const buffer = await response.arrayBuffer();
-  const fullText = new TextDecoder('euc-kr').decode(buffer);
-  const lines = fullText.split('\n');
-  const result: string[] = [];
-
-  for (const { book, startCh, endCh } of refs) {
-    for (let ch = startCh; ch <= endCh; ch++) {
-      const prefix = `${book}${ch}:`;
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith(prefix)) {
-          // Clean: remove section headers like <천지 창조>
-          const cleaned = trimmed.replace(/<[^>]*>/g, '').trim();
-          result.push(cleaned);
-        }
-      }
-    }
-  }
-  return result.join('\n');
-}
+import ScripturePassage from "./ScripturePassage";
+import MeditationGuide from "./MeditationGuide";
 
 function getDateKey(d: Date) {
   const yyyy = d.getFullYear();
@@ -94,13 +44,10 @@ export default function HomeTab({ onWriteClick, userId }: HomeTabProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [streak, setStreak] = useState(0);
   const [bibleOpen, setBibleOpen] = useState(false);
-  const [bibleText, setBibleText] = useState<string | null>(null);
-  const [bibleLoading, setBibleLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setBibleOpen(false);
-    setBibleText(null);
     (async () => {
       const { data } = await supabase
         .from("qt_plans")
@@ -265,93 +212,29 @@ export default function HomeTab({ onWriteClick, userId }: HomeTabProps) {
 
               {/* Bible original text toggle */}
               <button
-                onClick={async () => {
-                  if (bibleOpen) { setBibleOpen(false); return; }
-                  if (!bibleText) {
-                    setBibleLoading(true);
-                    try {
-                      const refs = parseReference(plan.reference);
-                      const text = await loadBibleChapters(refs);
-                      setBibleText(text || "해당 구절을 찾을 수 없습니다.");
-                    } catch { setBibleText("성경 파일을 불러올 수 없습니다."); }
-                    setBibleLoading(false);
-                  }
-                  setBibleOpen(true);
-                }}
+                onClick={() => setBibleOpen((v) => !v)}
                 className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                {bibleOpen ? "성경 원문 접기" : "성경 원문 보기"}
+                {bibleOpen ? "성경 본문 접기" : "성경 본문 보기"}
                 {bibleOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
               {bibleOpen && (
-                <div className="mt-2 rounded-xl bg-secondary/30 px-5 py-5 max-h-[400px] overflow-y-auto">
-                  {bibleLoading ? (
-                    <p className="text-[13px] text-muted-foreground text-center py-4">불러오는 중...</p>
-                  ) : (
-                    <p className="text-[13px] text-foreground/65 leading-[1.9] whitespace-pre-line font-scripture">
-                      {bibleText}
-                    </p>
-                  )}
+                <div className="mt-2 rounded-xl bg-secondary/30 px-5 py-5 max-h-[480px] overflow-y-auto">
+                  <ScripturePassage reference={plan.reference} />
                 </div>
               )}
             </div>
           </div>
 
           {/* Commentary card */}
-          {plan.commentary && (() => {
-            const sections = plan.commentary.split(/\n\n+/);
-            return (
-              <div className="rounded-2xl bg-card overflow-hidden">
-                <div className="px-5 py-5 md:px-6 space-y-4">
-                  <p className="text-[13px] font-bold text-foreground tracking-tight">
-                    묵상 길잡이
-                  </p>
-                  {sections.map((section, i) => {
-                    const trimmed = section.trim();
-                    if (!trimmed) return null;
-
-                    // 섹션 헤더 감지
-                    const headerMatch = trimmed.match(/^(오늘의 핵심|묵상 질문|🙏\s*.+)\n([\s\S]*)$/);
-                    if (headerMatch) {
-                      const header = headerMatch[1].replace(/^🙏\s*/, '');
-                      const body = headerMatch[2].trim();
-                      return (
-                        <div key={i}>
-                          <p className="text-[12px] font-semibold text-primary mb-1.5">
-                            {header}
-                          </p>
-                          <p className="text-[14px] text-foreground/65 leading-[1.85] whitespace-pre-line">
-                            {body}
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    // 질문 형태 (물음표로 끝나는 줄)
-                    if (trimmed.includes("?") && trimmed.split("\n").every((l: string) => !l.trim() || l.trim().endsWith("?"))) {
-                      return (
-                        <div key={i} className="rounded-xl bg-secondary/50 px-4 py-4 space-y-2.5">
-                          {trimmed.split("\n").filter((l: string) => l.trim()).map((q: string, qi: number) => (
-                            <p key={qi} className="text-[13px] text-foreground/70 leading-relaxed">
-                              {q.trim()}
-                            </p>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <p key={i} className="text-[14px] text-foreground/65 leading-[1.85] whitespace-pre-line">
-                        {trimmed}
-                      </p>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+          {plan.commentary && (
+            <div className="rounded-2xl bg-card px-5 py-5 md:px-6">
+              <p className="text-[13px] font-bold text-foreground tracking-tight mb-4">묵상 길잡이</p>
+              <MeditationGuide commentary={plan.commentary} />
+            </div>
+          )}
         </>
       ) : (
         <div className="rounded-2xl bg-card py-20 flex flex-col items-center gap-4">

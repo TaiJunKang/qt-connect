@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
-import { BookOpen, Save, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Lock, Globe, Share2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { BookOpen, Save, ChevronLeft, ChevronRight, ChevronDown, Lock, Globe, Share2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ScripturePassage from "./ScripturePassage";
+import MeditationGuide from "./MeditationGuide";
 
 function getDateKey(d: Date) {
   const yyyy = d.getFullYear();
@@ -53,20 +55,24 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
   const [saving, setSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [scriptureExpanded, setScriptureExpanded] = useState(true);
-  const [commentaryExpanded, setCommentaryExpanded] = useState(true);
+  const [planLoaded, setPlanLoaded] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
+  const [formVisible, setFormVisible] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
     setPlan(null);
+    setPlanLoaded(false);
     (async () => {
       const { data } = await supabase
         .from("qt_plans")
         .select("title, reference, text, commentary")
         .eq("date", dateKey)
         .maybeSingle();
-      if (!cancelled && data) setPlan(data as Plan);
+      if (cancelled) return;
+      setPlan((data as Plan) ?? null);
+      setPlanLoaded(true);
     })();
     return () => { cancelled = true; };
   }, [dateKey]);
@@ -103,6 +109,15 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     })();
     return () => { cancelled = true; };
   }, [userId, dateKey, toast]);
+
+  // 본문이 길어 작성 칸이 화면 밖에 있으면 바로가기 버튼을 띄움
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setFormVisible(entry.isIntersecting || entry.boundingClientRect.top < 0));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const handleSave = async () => {
     const trimmedMeditation = meditation.trim();
@@ -166,27 +181,25 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
   ];
 
   return (
-    <div className="px-5 pt-3 pb-8 space-y-6 max-w-lg mx-auto md:max-w-2xl md:px-6">
+    <div className="px-5 pt-3 pb-8 max-w-lg mx-auto md:max-w-2xl md:px-6 lg:max-w-none lg:px-8">
 
-      {/* ── Header ── */}
-      <div>
-        <h1 className="text-[22px] font-bold text-foreground tracking-tight">큐티 작성</h1>
-      </div>
-
-      {/* ── Date navigation ── */}
-      <div className="flex items-center gap-3 -mt-2">
+      {/* ── Header + date navigation ── */}
+      <div className="flex items-center gap-2">
+        <h1 className="text-[22px] font-bold text-foreground tracking-tight flex-1">큐티 작성</h1>
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, -1))}
+          aria-label="이전 날"
           className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-[14px] text-foreground/80 font-medium flex-1 text-center">
+        <span className="text-[14px] text-foreground/80 font-semibold min-w-[64px] text-center tabular-nums">
           {selectedDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}
         </span>
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, 1))}
           disabled={dateKey >= getDateKey(today)}
+          aria-label="다음 날"
           className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronRight className="w-4 h-4" />
@@ -194,155 +207,133 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         {!isToday && (
           <button
             onClick={() => setSelectedDate(today)}
-            className="text-[13px] text-primary font-semibold px-3 py-1.5 rounded-full bg-primary/8 hover:bg-primary/15 transition-colors"
+            className="text-[13px] text-primary font-semibold px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/15 transition-colors"
           >
             오늘
           </button>
         )}
       </div>
 
-      {/* ── Scripture block (collapsible) ── */}
-      {plan && (
-        <div className="rounded-2xl bg-card overflow-hidden">
-          <button
-            className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-accent/40 transition-colors"
-            onClick={() => setScriptureExpanded((v) => !v)}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-primary mb-0.5">
-                {plan.reference}
-              </p>
-              <p className="text-[14px] font-semibold text-foreground leading-snug truncate">
-                {plan.title}
-              </p>
-            </div>
-            {scriptureExpanded
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />}
-          </button>
+      <div className="mt-5 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
 
-          {scriptureExpanded && plan.text && (
-            <div className="mx-4 mb-4 rounded-xl bg-secondary/50 px-5 py-4">
-              <p className="text-[13.5px] text-foreground/70 leading-[1.85] whitespace-pre-line">
-                {plan.text}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+        {/* ── 말씀: 본문·해설·길잡이 모두 펼친 상태로 표시 (넓은 화면에서는 왼쪽 고정) ── */}
+        <div className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-2 lg:-mr-2">
+          {!planLoaded ? (
+            <div className="rounded-2xl bg-card h-64 animate-pulse" />
+          ) : plan ? (
+            <>
+              <article className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
+                <div className="flex items-center gap-1.5 text-primary mb-1.5">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <p className="text-[12px] font-semibold">{plan.reference}</p>
+                </div>
+                <h2 className="text-[18px] font-bold text-foreground leading-snug tracking-tight">{plan.title}</h2>
+                <div className="mt-4 pt-4 border-t border-border/60">
+                  <ScripturePassage reference={plan.reference} />
+                </div>
+              </article>
 
-      {/* ── Commentary (collapsible) ── */}
-      {plan?.commentary && (
-        <div className="rounded-2xl bg-card overflow-hidden">
-          <button
-            className="w-full flex items-center gap-2.5 px-5 py-3.5 text-left hover:bg-accent/40 transition-colors"
-            onClick={() => setCommentaryExpanded((v) => !v)}
-          >
-            <span className="text-[13px] font-bold text-foreground/80 flex-1">
-              묵상 길잡이
-            </span>
-            {commentaryExpanded
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground/40" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground/40" />}
-          </button>
-          {commentaryExpanded && (
-            <div className="px-5 pb-4 space-y-3">
-              {plan.commentary.split(/\n\n+/).map((section, i) => {
-                const trimmed = section.trim();
-                if (!trimmed) return null;
-                const headerMatch = trimmed.match(/^(오늘의 핵심|묵상 질문|🙏\s*.+)\n([\s\S]*)$/);
-                if (headerMatch) {
-                  return (
-                    <div key={i}>
-                      <p className="text-[12px] font-semibold text-primary mb-1">
-                        {headerMatch[1].replace(/^🙏\s*/, '')}
-                      </p>
-                      <p className="text-[13.5px] text-foreground/60 leading-[1.85] whitespace-pre-line">
-                        {headerMatch[2].trim()}
-                      </p>
-                    </div>
-                  );
-                }
-                if (trimmed.includes("?") && trimmed.split("\n").every((l: string) => !l.trim() || l.trim().endsWith("?"))) {
-                  return (
-                    <div key={i} className="rounded-xl bg-secondary/50 px-4 py-3 space-y-2">
-                      {trimmed.split("\n").filter((l: string) => l.trim()).map((q: string, qi: number) => (
-                        <p key={qi} className="text-[12.5px] text-foreground/65 leading-relaxed">{q.trim()}</p>
-                      ))}
-                    </div>
-                  );
-                }
-                return <p key={i} className="text-[13.5px] text-foreground/60 leading-[1.85] whitespace-pre-line">{trimmed}</p>;
-              })}
+              {plan.text && (
+                <section className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
+                  <p className="text-[13px] font-bold text-foreground tracking-tight mb-3">말씀 해설</p>
+                  <p className="text-[14px] text-foreground/70 leading-[1.85] whitespace-pre-line">{plan.text}</p>
+                </section>
+              )}
+
+              {plan.commentary && (
+                <section className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
+                  <p className="text-[13px] font-bold text-foreground tracking-tight mb-3">묵상 길잡이</p>
+                  <MeditationGuide commentary={plan.commentary} />
+                </section>
+              )}
+            </>
+          ) : (
+            <div className="rounded-2xl bg-card px-5 py-10 text-center shadow-card">
+              <BookOpen className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-[13px] text-muted-foreground">이 날은 등록된 말씀이 없어요</p>
             </div>
           )}
         </div>
-      )}
 
-      {/* ── Divider ── */}
-      <div className="flex items-center gap-3 py-1">
-        <div className="flex-1 h-px bg-border" />
-        <span className="text-[12px] text-muted-foreground font-medium">나의 묵상</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-
-      {/* ── Form fields ── */}
-      <div className="space-y-4">
-        {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
-          <div key={key}>
-            <div className="flex items-baseline gap-1.5 mb-2 px-1">
-              <span className="text-[13px] font-semibold text-foreground">
-                {label}
-              </span>
-              <span className="text-[11px] text-muted-foreground/70">{subtitle}</span>
-            </div>
-            <Textarea
-              placeholder={placeholder}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="min-h-[140px] bg-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
-            />
+        {/* ── 나의 묵상 ── */}
+        <div ref={formRef} className="mt-8 lg:mt-0 space-y-6 scroll-mt-4">
+          {/* ── Divider ── */}
+          <div className="flex items-center gap-3 py-1">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[12px] text-muted-foreground font-medium">나의 묵상</span>
+            <div className="flex-1 h-px bg-border" />
           </div>
-        ))}
-      </div>
 
-      {/* ── Public toggle ── */}
-      <div className="rounded-2xl bg-card px-5 py-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {isPublic
-            ? <Globe className="w-[18px] h-[18px] text-primary" />
-            : <Lock className="w-[18px] h-[18px] text-muted-foreground" />
-          }
-          <div>
-            <p className="text-[14px] font-medium text-foreground">공동체와 함께 나누기</p>
-            <p className="text-[12px] text-muted-foreground mt-0.5">묵상/적용만 공유 (기도는 비공개)</p>
+          {/* ── Form fields ── */}
+          <div className="space-y-4">
+            {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
+              <div key={key}>
+                <div className="flex items-baseline gap-1.5 mb-2 px-1">
+                  <span className="text-[13px] font-semibold text-foreground">
+                    {label}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground/70">{subtitle}</span>
+                </div>
+                <Textarea
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  className="min-h-[140px] bg-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* ── Public toggle ── */}
+          <div className="rounded-2xl bg-card px-5 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {isPublic
+                ? <Globe className="w-[18px] h-[18px] text-primary" />
+                : <Lock className="w-[18px] h-[18px] text-muted-foreground" />
+              }
+              <div>
+                <p className="text-[14px] font-medium text-foreground">공동체와 함께 나누기</p>
+                <p className="text-[12px] text-muted-foreground mt-0.5">묵상/적용만 공유 (기도는 비공개)</p>
+              </div>
+            </div>
+            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+          </div>
+
+          {/* ── Action buttons ── */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleSave}
+              disabled={saving || loadFailed}
+              className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
+            >
+              <Save className="w-[18px] h-[18px]" />
+              {saving ? "저장 중..." : hasSaved ? "수정하기" : "저장하기"}
+            </button>
+            {hasSaved && typeof navigator !== "undefined" && navigator.share && (
+              <button
+                onClick={() => {
+                  const text = [`[QT Connect] ${dateKey}`, plan?.reference, plan?.title, '', '묵상: ' + meditation.slice(0, 100), '적용: ' + application.slice(0, 100)].filter(Boolean).join('\n');
+                  navigator.share({ title: 'QT 나눔', text }).catch(() => {});
+                }}
+                className="w-14 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl flex items-center justify-center transition-colors active:scale-[0.98]"
+              >
+                <Share2 className="w-[18px] h-[18px]" />
+              </button>
+            )}
           </div>
         </div>
-        <Switch checked={isPublic} onCheckedChange={setIsPublic} />
       </div>
 
-      {/* ── Action buttons ── */}
-      <div className="flex gap-3">
+      {!formVisible && (
         <button
-          onClick={handleSave}
-          disabled={saving || loadFailed}
-          className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
+          onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-24 z-40 flex items-center gap-1.5 rounded-full bg-foreground text-background pl-4 pr-3.5 py-2.5 text-[13px] font-semibold shadow-lg active:scale-95 transition-transform"
         >
-          <Save className="w-[18px] h-[18px]" />
-          {saving ? "저장 중..." : hasSaved ? "수정하기" : "저장하기"}
+          <PenLine className="w-4 h-4" />
+          {hasSaved ? "내 묵상 보기" : "묵상 쓰기"}
+          <ChevronDown className="w-4 h-4" />
         </button>
-        {hasSaved && typeof navigator !== "undefined" && navigator.share && (
-          <button
-            onClick={() => {
-              const text = [`[QT Connect] ${dateKey}`, plan?.reference, plan?.title, '', '묵상: ' + meditation.slice(0, 100), '적용: ' + application.slice(0, 100)].filter(Boolean).join('\n');
-              navigator.share({ title: 'QT 나눔', text }).catch(() => {});
-            }}
-            className="w-14 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl flex items-center justify-center transition-colors active:scale-[0.98]"
-          >
-            <Share2 className="w-[18px] h-[18px]" />
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
