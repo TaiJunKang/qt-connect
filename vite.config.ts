@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false, // src/main.tsx에서 직접 등록 (업데이트 확인 주기 제어)
       includeAssets: ["logo.svg"],
       manifest: {
         name: "QT Connect - 홍제감리교회 청년부",

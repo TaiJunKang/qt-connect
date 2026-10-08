@@ -23,6 +23,28 @@ function addDays(d: Date, n: number) {
   return r;
 }
 
+// 작성 중인 글 임시저장 (앱 업데이트로 새로고침되거나 강제 종료돼도 유지)
+type Draft = { meditation: string; application: string; prayer: string };
+const draftKey = (userId: string, dateKey: string) => `qt-draft:${userId}:${dateKey}`;
+
+function readDraft(key: string): Draft | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(key: string, draft: Draft | null) {
+  try {
+    if (draft) localStorage.setItem(key, JSON.stringify(draft));
+    else localStorage.removeItem(key);
+  } catch {
+    // 저장 공간이 막힌 환경에서는 임시저장 없이 동작
+  }
+}
+
 interface Plan {
   title: string;
   reference: string;
@@ -57,6 +79,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
   const [hasSaved, setHasSaved] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [planLoaded, setPlanLoaded] = useState(false);
+  const dirty = useRef(false); // 사용자가 직접 고친 내용이 있을 때만 임시저장
   const formRef = useRef<HTMLDivElement>(null);
   const [formVisible, setFormVisible] = useState(true);
   const { toast } = useToast();
@@ -85,6 +108,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     setIsPublic(false);
     setHasSaved(false);
     setLoadFailed(false);
+    dirty.current = false;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
@@ -107,9 +131,22 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         setIsPublic(data.is_public || false);
         setHasSaved(true);
       }
+      const draft = readDraft(draftKey(userId, dateKey));
+      if (draft) {
+        setMeditation(draft.meditation);
+        setApplication(draft.application);
+        setPrayer(draft.prayer);
+        dirty.current = true;
+        toast({ title: "작성 중이던 내용을 불러왔어요", description: "저장하기를 눌러야 반영돼요." });
+      }
     })();
     return () => { cancelled = true; };
   }, [userId, dateKey, toast]);
+
+  useEffect(() => {
+    if (!dirty.current) return;
+    writeDraft(draftKey(userId, dateKey), { meditation, application, prayer });
+  }, [userId, dateKey, meditation, application, prayer]);
 
   // 본문이 길어 작성 칸이 화면 밖에 있으면 바로가기 버튼을 띄움
   useEffect(() => {
@@ -144,6 +181,8 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         { onConflict: "user_id,date" },
       );
       if (error) throw error;
+      dirty.current = false;
+      writeDraft(draftKey(userId, dateKey), null);
       setHasSaved(true);
       toast({ title: "저장되었습니다", description: isPublic ? "공동체와 공유되었어요." : "나만 볼 수 있어요." });
     } catch (err: unknown) {
@@ -161,7 +200,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
       subtitle: "하나님은 어떤 분이신가",
       placeholder: "말씀을 통해 발견한 하나님의 성품, 하신 일, 약속을 적어보세요.",
       value: meditation,
-      onChange: setMeditation,
+      onChange: (v: string) => { dirty.current = true; setMeditation(v); },
     },
     {
       key: "application",
@@ -169,7 +208,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
       subtitle: "내게 주시는 교훈",
       placeholder: "오늘 말씀을 내 삶에 어떻게 적용할 수 있을까요?",
       value: application,
-      onChange: setApplication,
+      onChange: (v: string) => { dirty.current = true; setApplication(v); },
     },
     {
       key: "prayer",
@@ -177,7 +216,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
       subtitle: "나의 기도",
       placeholder: "오늘 하나님께 드리는 기도를 적어보세요.",
       value: prayer,
-      onChange: setPrayer,
+      onChange: (v: string) => { dirty.current = true; setPrayer(v); },
     },
   ];
 
