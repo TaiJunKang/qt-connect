@@ -52,11 +52,13 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
   const [isPublic, setIsPublic] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [scriptureExpanded, setScriptureExpanded] = useState(true);
   const [commentaryExpanded, setCommentaryExpanded] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    let cancelled = false;
     setPlan(null);
     (async () => {
       const { data } = await supabase
@@ -64,8 +66,9 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         .select("title, reference, text, commentary")
         .eq("date", dateKey)
         .maybeSingle();
-      if (data) setPlan(data as Plan);
+      if (!cancelled && data) setPlan(data as Plan);
     })();
+    return () => { cancelled = true; };
   }, [dateKey]);
 
   useEffect(() => {
@@ -74,13 +77,22 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     setPrayer("");
     setIsPublic(false);
     setHasSaved(false);
+    setLoadFailed(false);
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("qt_logs")
         .select("id, meditation, application, prayer, is_public")
         .eq("user_id", userId)
         .eq("date", dateKey)
         .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        // 조회 실패 시 빈 폼으로 기존 기록을 덮어쓰지 않도록 저장을 막음
+        setLoadFailed(true);
+        toast({ title: "기록을 불러오지 못했어요", description: "잠시 후 다시 시도해주세요.", variant: "destructive" });
+        return;
+      }
       if (data) {
         setMeditation(data.meditation || "");
         setApplication(data.application || "");
@@ -89,38 +101,37 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         setHasSaved(true);
       }
     })();
-  }, [userId, dateKey]);
+    return () => { cancelled = true; };
+  }, [userId, dateKey, toast]);
 
   const handleSave = async () => {
+    const trimmedMeditation = meditation.trim();
+    const trimmedApplication = application.trim();
+    const trimmedPrayer = prayer.trim();
+    if (!trimmedMeditation && !trimmedApplication && !trimmedPrayer) {
+      toast({ title: "내용을 입력해주세요", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
-      const trimmedMeditation = meditation.trim();
-      const trimmedApplication = application.trim();
-      const trimmedPrayer = prayer.trim();
-      const payload = {
-        user_id: userId,
-        user_name: userDisplayName,
-        date: dateKey,
-        meditation: trimmedMeditation,
-        application: trimmedApplication,
-        prayer: trimmedPrayer,
-        is_public: isPublic,
-      };
-      if (hasSaved) {
-        const { error } = await supabase
-          .from("qt_logs")
-          .update({ meditation: trimmedMeditation, application: trimmedApplication, prayer: trimmedPrayer, is_public: isPublic })
-          .eq("user_id", userId)
-          .eq("date", dateKey);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("qt_logs").insert(payload);
-        if (error) throw error;
-        setHasSaved(true);
-      }
+      // (user_id, date) 유니크 기준 upsert: 날짜 전환 중 상태가 꼬여도 정확히 해당 날짜에 저장됨
+      const { error } = await supabase.from("qt_logs").upsert(
+        {
+          user_id: userId,
+          user_name: userDisplayName,
+          date: dateKey,
+          meditation: trimmedMeditation,
+          application: trimmedApplication,
+          prayer: trimmedPrayer,
+          is_public: isPublic,
+        },
+        { onConflict: "user_id,date" },
+      );
+      if (error) throw error;
+      setHasSaved(true);
       toast({ title: "저장되었습니다", description: isPublic ? "공동체와 공유되었어요." : "나만 볼 수 있어요." });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.";
+      const message = (err as { message?: string })?.message || "저장 중 오류가 발생했습니다.";
       toast({ title: message, variant: "destructive" });
     } finally {
       setSaving(false);
@@ -175,7 +186,8 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         </span>
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          disabled={dateKey >= getDateKey(today)}
+          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -313,7 +325,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
       <div className="flex gap-3">
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || loadFailed}
           className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
         >
           <Save className="w-[18px] h-[18px]" />

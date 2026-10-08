@@ -11,6 +11,7 @@ import CommunityTab from "@/components/CommunityTab";
 import RankingTab from "@/components/RankingTab";
 import SettingsTab from "@/components/SettingsTab";
 import InstallPrompt from "@/components/InstallPrompt";
+import PasswordResetDialog from "@/components/PasswordResetDialog";
 import type { User } from "@supabase/supabase-js";
 import type { Tab } from "@/lib/navigation";
 
@@ -22,10 +23,12 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [writeDate, setWriteDate] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
+  const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {
     // Set up auth listener BEFORE getting session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") setRecovering(true);
       setUser(session?.user ?? null);
       if (!session?.user) setDisplayName("");
       setLoading(false);
@@ -96,7 +99,7 @@ const Index = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomeTab onWriteClick={() => { setWriteDate(undefined); setActiveTab("write"); }} userId={user.id} />;
+        return <HomeTab onWriteClick={(date) => { setWriteDate(date); setActiveTab("write"); }} userId={user.id} />;
       case "write":
         return <WriteTab key={writeDate} userId={user.id} userDisplayName={displayName} initialDate={writeDate} />;
       case "community":
@@ -127,6 +130,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background md:flex">
+      <PasswordResetDialog open={recovering} onDone={() => setRecovering(false)} />
       {/* Desktop sidebar — hidden on mobile */}
       <DesktopSidebar activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
 

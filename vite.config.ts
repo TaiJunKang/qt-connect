@@ -42,14 +42,18 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/,
-            handler: "NetworkFirst",
+            // API/인증 응답은 캐시하지 않음 (느린 네트워크에서 오래된 목록이 보이는 문제 방지)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/(rest|auth|functions)\/.*/,
+            handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/,
+            handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "supabase-v2",
-              networkTimeoutSeconds: 5,
+              cacheName: "supabase-storage",
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
             },
           },

@@ -14,6 +14,7 @@ async function loadBibleText(): Promise<string> {
   if (loadPromise) return loadPromise;
 
   loadPromise = (async () => {
+    try {
     const response = await fetch('/bible.txt');
     if (!response.ok) {
       throw new Error(`파일을 불러올 수 없습니다. (상태 코드: ${response.status})`);
@@ -26,6 +27,10 @@ async function loadBibleText(): Promise<string> {
     }
     bibleTextCache = text;
     return bibleTextCache;
+    } catch (e) {
+      loadPromise = null; // 실패한 로딩은 캐시하지 않고 다음 호출 때 재시도
+      throw e;
+    }
   })();
 
   return loadPromise;

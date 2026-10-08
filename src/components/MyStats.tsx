@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Flame, CalendarDays, BookOpen, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateBadges, type BadgeWithStatus } from "@/lib/badges";
+import { calcStreaks } from "@/lib/streak";
 import BadgeGrid from "./BadgeGrid";
 
 interface MyStatsProps {
@@ -16,68 +17,6 @@ interface StatsData {
   thisMonthTotal: number;
   monthlyHeatmap: number[]; // 1~31일 각 날짜에 기록 있으면 1, 없으면 0
   badges: BadgeWithStatus[];
-}
-
-function getDateKey(d: Date) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function calcStreaks(sortedDates: string[]): { current: number; longest: number } {
-  if (sortedDates.length === 0) return { current: 0, longest: 0 };
-
-  let current = 0;
-  let longest = 0;
-  let streak = 1;
-
-  const now = new Date();
-  const todayKey = getDateKey(now);
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = getDateKey(yesterday);
-
-  const dateSet = new Set(sortedDates);
-  const hasToday = dateSet.has(todayKey);
-  const hasYesterday = dateSet.has(yesterdayKey);
-
-  // Calculate current streak going backwards from today
-  if (hasToday || hasYesterday) {
-    const startDate = hasToday ? new Date(now) : new Date(yesterday);
-    current = 1;
-    const check = new Date(startDate);
-    check.setDate(check.getDate() - 1);
-    while (true) {
-      if (dateSet.has(getDateKey(check))) {
-        current++;
-        check.setDate(check.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-  }
-
-  // Calculate longest streak (YYYY-MM-DD sorts lexicographically)
-  const uniqueDates = [...dateSet].sort();
-  if (uniqueDates.length > 0) {
-    streak = 1;
-    longest = 1;
-    for (let i = 1; i < uniqueDates.length; i++) {
-      const prev = new Date(uniqueDates[i - 1] + "T00:00:00");
-      const curr = new Date(uniqueDates[i] + "T00:00:00");
-      const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-      if (diff === 1) {
-        streak++;
-        longest = Math.max(longest, streak);
-      } else {
-        streak = 1;
-      }
-    }
-    longest = Math.max(longest, streak);
-  }
-
-  return { current, longest };
 }
 
 export default function MyStats({ userId }: MyStatsProps) {

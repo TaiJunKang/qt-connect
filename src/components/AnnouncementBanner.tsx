@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Megaphone, Pin, ChevronDown, ChevronUp, AlertTriangle, Calendar, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getDateKey } from "@/lib/date";
 
 interface Announcement {
   id: string;
@@ -30,7 +31,7 @@ export default function AnnouncementBanner() {
 
   useEffect(() => {
     async function fetch() {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getDateKey(new Date()); // 로컬(KST) 날짜 기준
       const { data } = await supabase
         .from("announcements")
         .select("id, title, content, category, is_pinned, created_at, publish_start, publish_end")

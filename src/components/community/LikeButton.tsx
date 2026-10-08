@@ -40,7 +40,7 @@ export default function LikeButton({
         const { error } = await supabase
           .from("likes")
           .insert({ content_type: contentType, content_id: contentId, user_id: userId });
-        if (error) throw error;
+        if (error && error.code !== "23505") throw error; // 연타로 인한 중복은 무시
       }
       onChange();
     } catch (e) {

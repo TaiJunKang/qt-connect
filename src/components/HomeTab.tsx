@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BookOpen, PenLine, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Search, Share2, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { calcStreaks } from "@/lib/streak";
 import BibleSearch from "./BibleSearch";
 import WeeklyReview from "./WeeklyReview";
 import AnnouncementBanner from "./AnnouncementBanner";
@@ -78,7 +79,7 @@ interface Plan {
 }
 
 interface HomeTabProps {
-  onWriteClick: () => void;
+  onWriteClick: (date: string) => void;
   userId: string;
 }
 
@@ -117,30 +118,8 @@ export default function HomeTab({ onWriteClick, userId }: HomeTabProps) {
       const { data } = await supabase
         .from("qt_logs")
         .select("date")
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-        .limit(60);
-      if (!data || data.length === 0) { setStreak(0); return; }
-
-      let count = 0;
-      const todayKey = getDateKey(new Date());
-      const d = new Date();
-
-      // 오늘 작성 안 했으면 어제부터 체크
-      if (!data.find((r) => r.date === todayKey)) {
-        d.setDate(d.getDate() - 1);
-      }
-
-      const dateSet = new Set(data.map((r) => r.date));
-      for (let i = 0; i < 60; i++) {
-        if (dateSet.has(getDateKey(d))) {
-          count++;
-          d.setDate(d.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-      setStreak(count);
+        .eq("user_id", userId);
+      setStreak(calcStreaks((data ?? []).map((r) => r.date)).current);
     })();
   }, [userId]);
 
@@ -392,11 +371,11 @@ export default function HomeTab({ onWriteClick, userId }: HomeTabProps) {
       {/* ── Write CTA ── */}
       {!isSunday && (
         <button
-          onClick={onWriteClick}
+          onClick={() => onWriteClick(dateKey)}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
         >
           <PenLine className="w-[18px] h-[18px]" />
-          오늘의 큐티 작성하기
+          {isToday ? "오늘의 큐티 작성하기" : "이 날의 큐티 작성하기"}
         </button>
       )}
     </div>

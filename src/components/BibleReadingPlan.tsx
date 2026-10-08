@@ -44,14 +44,16 @@ export default function BibleReadingPlan({ userId, onClose }: BibleReadingPlanPr
 
     try {
       if (wasRead) {
-        await supabase.from("bible_readings").delete().eq("user_id", userId).eq("book", book).eq("chapter", chapter);
+        const { error } = await supabase.from("bible_readings").delete().eq("user_id", userId).eq("book", book).eq("chapter", chapter);
+        if (error) throw error;
       } else {
-        await supabase.from("bible_readings").insert({ user_id: userId, book, chapter });
+        const { error } = await supabase.from("bible_readings").insert({ user_id: userId, book, chapter });
+        if (error && error.code !== "23505") throw error; // 이미 체크된 장은 무시
       }
     } catch (e) {
       // Rollback
       setReadSet(readSet);
-      const msg = e instanceof Error ? e.message : "오류 발생";
+      const msg = (e as { message?: string })?.message || "오류 발생";
       toast({ title: msg, variant: "destructive" });
     }
   };

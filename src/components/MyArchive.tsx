@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, BookOpen, Calendar as CalendarIcon, List, Globe, Lock, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseDateKey } from "@/lib/date";
 import { useToast } from "@/hooks/use-toast";
 
 interface MyArchiveProps {
@@ -23,6 +24,7 @@ interface ArchivedLog {
 
 type ViewMode = "calendar" | "list";
 
+
 export default function MyArchive({ userId, onClose, onEditLog }: MyArchiveProps) {
   const [logs, setLogs] = useState<ArchivedLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function MyArchive({ userId, onClose, onEditLog }: MyArchiveProps
       .from("qt_logs")
       .select("id, date, meditation, application, prayer, is_public, created_at")
       .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (!logData || logData.length === 0) {
       setLogs([]);
@@ -79,7 +81,7 @@ export default function MyArchive({ userId, onClose, onEditLog }: MyArchiveProps
   // Calendar view helpers
   const logsByYearMonth = new Map<string, Map<string, ArchivedLog>>();
   logs.forEach((log) => {
-    const ym = log.created_at.slice(0, 7); // YYYY-MM
+    const ym = log.date.slice(0, 7); // QT 날짜 기준 YYYY-MM
     if (!logsByYearMonth.has(ym)) logsByYearMonth.set(ym, new Map());
     logsByYearMonth.get(ym)!.set(log.date, log);
   });
@@ -175,7 +177,7 @@ export default function MyArchive({ userId, onClose, onEditLog }: MyArchiveProps
 }
 
 function ArchiveListItem({ log, onClick }: { log: ArchivedLog; onClick: () => void }) {
-  const dateObj = new Date(log.created_at);
+  const dateObj = parseDateKey(log.date);
   const dateStr = dateObj.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
 
   const preview = log.meditation || log.application || log.prayer || "(내용 없음)";
@@ -266,7 +268,7 @@ function LogDetailModal({ log, onClose, onEdit, onDelete }: {
   onEdit?: (date: string) => void;
   onDelete: (log: ArchivedLog) => void;
 }) {
-  const dateStr = new Date(log.created_at).toLocaleDateString("ko-KR", {
+  const dateStr = parseDateKey(log.date).toLocaleDateString("ko-KR", {
     year: "numeric", month: "long", day: "numeric", weekday: "long",
   });
 
