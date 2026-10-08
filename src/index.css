@@ -140,18 +140,18 @@
     line-height: 1.3;
   }
 
-  /* 화면 제목은 명조 (묵상 노트 느낌) */
+  /* 화면 제목: 굵은 고딕 */
   .font-display {
-    font-family: 'Noto Serif KR', 'Georgia', serif;
+    font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.035em;
   }
 
-  /* Scripture uses elegant serif */
+  /* 성경 본문: 본문과 같은 고딕, 읽기 편하게 자간만 살짝 */
   .font-scripture {
-    font-family: 'Noto Serif KR', 'Georgia', 'Times New Roman', serif;
+    font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
     font-weight: 400;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.005em;
   }
 }
 
