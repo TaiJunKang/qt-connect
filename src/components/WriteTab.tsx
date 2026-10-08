@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ScripturePassage from "./ScripturePassage";
 import MeditationGuide from "./MeditationGuide";
+import { cleanPlanTitle } from "@/lib/plan";
 
 function getDateKey(d: Date) {
   const yyyy = d.getFullYear();
@@ -185,7 +186,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
 
       {/* ── Header + date navigation ── */}
       <div className="flex items-center gap-2">
-        <h1 className="text-[22px] font-bold text-foreground tracking-tight flex-1">큐티 작성</h1>
+        <h1 className="font-display text-[24px] text-foreground flex-1">큐티 작성</h1>
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, -1))}
           aria-label="이전 날"
@@ -219,7 +220,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         {/* ── 말씀: 본문·해설·길잡이 모두 펼친 상태로 표시 (넓은 화면에서는 왼쪽 고정) ── */}
         <div className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-2 lg:-mr-2">
           {!planLoaded ? (
-            <div className="rounded-2xl bg-card h-64 animate-pulse" />
+            <div className="rounded-2xl bg-card shadow-card h-64 animate-pulse" />
           ) : plan ? (
             <>
               <article className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
@@ -227,7 +228,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
                   <BookOpen className="w-3.5 h-3.5" />
                   <p className="text-[12px] font-semibold">{plan.reference}</p>
                 </div>
-                <h2 className="text-[18px] font-bold text-foreground leading-snug tracking-tight">{plan.title}</h2>
+                <h2 className="font-display text-[20px] text-foreground leading-snug">{cleanPlanTitle(plan.title, plan.reference)}</h2>
                 <div className="mt-4 pt-4 border-t border-border/60">
                   <ScripturePassage reference={plan.reference} />
                 </div>
@@ -258,9 +259,8 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         {/* ── 나의 묵상 ── */}
         <div ref={formRef} className="mt-8 lg:mt-0 space-y-6 scroll-mt-4">
           {/* ── Divider ── */}
-          <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[12px] text-muted-foreground font-medium">나의 묵상</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[12.5px] font-bold tracking-[0.04em] text-primary">나의 묵상</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
@@ -269,23 +269,23 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
             {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
               <div key={key}>
                 <div className="flex items-baseline gap-1.5 mb-2 px-1">
-                  <span className="text-[13px] font-semibold text-foreground">
+                  <span className="font-display text-[15px] text-foreground">
                     {label}
                   </span>
-                  <span className="text-[11px] text-muted-foreground/70">{subtitle}</span>
+                  <span className="text-[12px] text-muted-foreground">{subtitle}</span>
                 </div>
                 <Textarea
                   placeholder={placeholder}
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
-                  className="min-h-[140px] bg-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
+                  className="min-h-[140px] bg-card shadow-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
                 />
               </div>
             ))}
           </div>
 
           {/* ── Public toggle ── */}
-          <div className="rounded-2xl bg-card px-5 py-4 flex items-center justify-between gap-4">
+          <div className="rounded-2xl bg-card shadow-card px-5 py-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {isPublic
                 ? <Globe className="w-[18px] h-[18px] text-primary" />

@@ -225,7 +225,7 @@ function CalendarMonth({ ym, logMap, onSelectLog }: {
   const count = logMap.size;
 
   return (
-    <div className="rounded-2xl bg-card border border-border/40 shadow-card p-4">
+    <div className="rounded-2xl bg-card shadow-card p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-[13px] font-bold text-foreground">{monthLabel}</h3>
         <span className="text-[11px] font-semibold text-primary bg-primary/8 px-2 py-0.5 rounded-md">

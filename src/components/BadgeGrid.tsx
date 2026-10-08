@@ -9,7 +9,7 @@ export default function BadgeGrid({ badges }: BadgeGridProps) {
   const earnedCount = badges.filter((b) => b.earned).length;
 
   return (
-    <div className="rounded-2xl bg-card border border-border/40 px-4 py-4 shadow-card">
+    <div className="rounded-2xl bg-card px-4 py-4 shadow-card">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center">

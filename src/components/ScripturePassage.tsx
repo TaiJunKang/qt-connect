@@ -4,10 +4,11 @@ import { loadChapters, parseReference, type Verse } from "@/lib/bible-parser";
 interface ScripturePassageProps {
   reference: string; // "신명기 1장", "창세기 1~2장"
   className?: string;
+  maxVerses?: number; // 미리보기: 앞부분 몇 절만 보여주고 아래를 흐리게
 }
 
 // 개역개정 본문을 절 번호·소제목과 함께 표시
-export default function ScripturePassage({ reference, className = "" }: ScripturePassageProps) {
+export default function ScripturePassage({ reference, className = "", maxVerses }: ScripturePassageProps) {
   const [verses, setVerses] = useState<Verse[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -40,10 +41,15 @@ export default function ScripturePassage({ reference, className = "" }: Scriptur
   }
 
   const multiChapter = new Set(verses.map((v) => v.chapter)).size > 1;
+  const shown = maxVerses ? verses.slice(0, maxVerses) : verses;
+  const truncated = shown.length < verses.length;
 
   return (
-    <div className={`font-scripture text-[15px] leading-[2] text-foreground/85 ${className}`}>
-      {verses.map((v, i) => (
+    <div
+      className={`font-scripture text-[15px] leading-[2] text-foreground/85 ${className}`}
+      style={truncated ? { maskImage: "linear-gradient(to bottom, black 55%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent)" } : undefined}
+    >
+      {shown.map((v, i) => (
         <div key={i}>
           {multiChapter && (i === 0 || verses[i - 1].chapter !== v.chapter) && (
             <p className="font-sans text-[12px] font-bold text-primary tracking-tight mt-5 first:mt-0 mb-1">

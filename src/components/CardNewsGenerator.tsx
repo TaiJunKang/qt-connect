@@ -284,7 +284,7 @@ export default function CardNewsGenerator({ onClose, initialReference, initialTe
             <p className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-wider flex items-center gap-1">
               <ImageIcon className="w-3 h-3" /> 미리보기
             </p>
-            <div className="rounded-xl border border-border/40 overflow-hidden shadow-card bg-muted/30 p-2">
+            <div className="rounded-xl overflow-hidden shadow-card bg-muted/30 p-2">
               <canvas
                 ref={canvasRef}
                 className="w-full h-auto rounded-lg"

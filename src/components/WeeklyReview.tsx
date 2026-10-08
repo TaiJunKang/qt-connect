@@ -107,7 +107,7 @@ export default function WeeklyReview({ userId }: WeeklyReviewProps) {
   }
 
   return (
-    <div className="rounded-2xl bg-card border border-border/40 shadow-card overflow-hidden">
+    <div className="rounded-2xl bg-card shadow-card overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-4 pb-3 border-b border-border/30 bg-gradient-to-r from-primary/5 to-transparent">
         <div className="flex items-center justify-between">

@@ -74,7 +74,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
         </div>
 
         {/* Brand text */}
-        <h1 className="text-[15px] font-medium tracking-wide text-muted-foreground">
+        <h1 className="font-display text-[26px] text-foreground">
           QT Connect
         </h1>
         <p className="text-[14px] text-muted-foreground mt-1">
@@ -126,7 +126,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
                   placeholder="공동체에서 사용할 이름"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="h-12 bg-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
+                  className="h-12 bg-card shadow-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
                 />
               </div>
             )}
@@ -142,7 +142,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 bg-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
+                className="h-12 bg-card shadow-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
               />
             </div>
 
@@ -158,7 +158,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-12 bg-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
+                  className="h-12 bg-card shadow-card border-0 rounded-xl text-[14px] focus-visible:ring-1 focus-visible:ring-primary/30 px-4"
                 />
               </div>
             )}

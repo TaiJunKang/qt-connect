@@ -27,7 +27,7 @@ export default function CommunityTab({ userId, userDisplayName }: CommunityTabPr
           <p className="text-[11px] text-muted-foreground font-medium tracking-[0.1em] uppercase">
             {dateStr}
           </p>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">공동체</h1>
+          <h1 className="font-display text-[24px] text-foreground">공동체</h1>
         </div>
       </div>
 

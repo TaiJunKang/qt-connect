@@ -60,7 +60,7 @@ function LogCard({ log, userId, userDisplayName, onChange }: { log: QTLog; userI
   const hasMore = meditationLong || applicationLong;
 
   return (
-    <div className="rounded-2xl bg-card border border-border/40 shadow-card overflow-hidden hover:shadow-soft transition-shadow duration-200">
+    <div className="rounded-2xl bg-card shadow-card overflow-hidden hover:shadow-soft transition-shadow duration-200">
       <div className="px-5 pt-4 pb-4">
         {/* Author row */}
         <div className="flex items-center gap-2.5 mb-4">

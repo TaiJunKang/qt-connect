@@ -15,7 +15,7 @@ export default function DesktopSidebar({ activeTab, onTabChange }: DesktopSideba
             <img src="/logo.svg" alt="QT Connect" className="w-full h-full" />
           </div>
           <div>
-            <h2 className="text-[15px] font-bold text-sidebar-foreground tracking-tight">QT Connect</h2>
+            <h2 className="font-display text-[16px] text-sidebar-foreground">QT Connect</h2>
             <p className="text-[10px] text-sidebar-foreground/40 tracking-wide">홍제감리교회 청년부</p>
           </div>
         </div>
@@ -34,7 +34,7 @@ export default function DesktopSidebar({ activeTab, onTabChange }: DesktopSideba
               onClick={() => onTabChange(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-primary shadow-xs"
+                  ? "bg-sidebar-accent text-sidebar-primary shadow-card"
                   : "text-sidebar-foreground/50 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/80"
               }`}
             >
@@ -50,10 +50,10 @@ export default function DesktopSidebar({ activeTab, onTabChange }: DesktopSideba
 
       {/* Footer */}
       <div className="px-5 py-5 border-t border-sidebar-border">
-        <p className="text-[10px] text-sidebar-foreground/25 leading-relaxed font-scripture italic">
+        <p className="text-[10px] text-sidebar-foreground/45 leading-relaxed font-scripture">
           "말씀이 네 안에 풍성히 거하게 하라"
           <br />
-          <span className="text-sidebar-foreground/15 not-italic">골로새서 3:16</span>
+          <span className="text-sidebar-foreground/35">골로새서 3:16</span>
         </p>
       </div>
     </aside>

@@ -137,11 +137,11 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
           <Settings className="w-4.5 h-4.5 text-primary" />
         </div>
-        <h1 className="text-xl font-bold text-foreground tracking-tight">설정</h1>
+        <h1 className="font-display text-[24px] text-foreground">설정</h1>
       </div>
 
       {/* ── Profile card ── */}
-      <div className="rounded-2xl bg-card border border-border/40 shadow-card overflow-hidden">
+      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
         <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
         <div className="px-5 pb-5 -mt-8">
           <div className="flex items-end gap-4">
@@ -181,7 +181,7 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
       </div>
 
       {/* ── Menu items ── */}
-      <div className="rounded-2xl bg-card border border-border/40 shadow-card divide-y divide-border/30 overflow-hidden">
+      <div className="rounded-2xl bg-card shadow-card divide-y divide-border/30 overflow-hidden">
         {/* My Archive */}
         <button
           onClick={() => setShowArchive(true)}

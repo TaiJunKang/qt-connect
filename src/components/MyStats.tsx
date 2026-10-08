@@ -95,23 +95,23 @@ export default function MyStats({ userId }: MyStatsProps) {
     <div className="space-y-3">
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200/40 px-3 py-4 text-center shadow-xs">
-          <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mx-auto mb-2">
-            <Flame className="w-4 h-4 text-orange-500" />
+        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+            <Flame className="w-4 h-4 text-primary" />
           </div>
           <p className="text-2xl font-bold text-foreground">{stats.currentStreak}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">연속 묵상</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 px-3 py-4 text-center shadow-xs">
+        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
             <TrendingUp className="w-4 h-4 text-primary" />
           </div>
           <p className="text-2xl font-bold text-foreground">{stats.longestStreak}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">최장 연속</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/40 px-3 py-4 text-center shadow-xs">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
-            <BookOpen className="w-4 h-4 text-emerald-600" />
+        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
+            <BookOpen className="w-4 h-4 text-primary" />
           </div>
           <p className="text-2xl font-bold text-foreground">{stats.totalDays}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">총 묵상일</p>
@@ -119,7 +119,7 @@ export default function MyStats({ userId }: MyStatsProps) {
       </div>
 
       {/* Monthly heatmap */}
-      <div className="rounded-2xl bg-card border border-border/40 px-4 py-4 shadow-card">
+      <div className="rounded-2xl bg-card px-4 py-4 shadow-card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">

@@ -58,7 +58,7 @@ export default function RankingTab({ userId }: RankingTabProps) {
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground font-medium tracking-[0.12em] uppercase">My Journey</p>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">내 묵상 통계</h1>
+          <h1 className="font-display text-[24px] text-foreground">내 묵상 통계</h1>
         </div>
       </div>
       <MyStats userId={userId} />
@@ -76,7 +76,7 @@ export default function RankingTab({ userId }: RankingTabProps) {
           </div>
           <div>
             <p className="text-[10px] text-muted-foreground font-medium tracking-[0.12em] uppercase">Monthly</p>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">참여 랭킹</h1>
+            <h1 className="font-display text-[24px] text-foreground">참여 랭킹</h1>
           </div>
         </div>
         <button
