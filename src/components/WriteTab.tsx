@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { BookOpen, Save, ChevronLeft, ChevronRight, ChevronDown, Lock, Globe, Share2, PenLine } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { BookOpen, ChevronLeft, ChevronRight, ChevronDown, Share2, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getDateKey, parseDateKey } from "@/lib/date";
+import { cleanPlanTitle } from "@/lib/plan";
 import ScripturePassage from "./ScripturePassage";
 import MeditationGuide from "./MeditationGuide";
-import { cleanPlanTitle } from "@/lib/plan";
-
-function getDateKey(d: Date) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -45,6 +35,14 @@ function writeDraft(key: string, draft: Draft | null) {
   }
 }
 
+type Visibility = "public" | "anonymous" | "private";
+
+const VISIBILITY_OPTIONS: { value: Visibility; label: string; saved: string }[] = [
+  { value: "public", label: "이름 공개", saved: "나눔에 이름과 함께 올라갔어요." },
+  { value: "anonymous", label: "익명 공개", saved: "나눔에 익명으로 올라갔어요." },
+  { value: "private", label: "나만 보기", saved: "나만 볼 수 있어요. 참여 기록에는 반영돼요." },
+];
+
 interface Plan {
   title: string;
   reference: string;
@@ -60,23 +58,17 @@ interface WriteTabProps {
 
 export default function WriteTab({ userId, userDisplayName, initialDate }: WriteTabProps) {
   const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(() => {
-    if (initialDate) {
-      const [y, m, d] = initialDate.split("-").map(Number);
-      return new Date(y, m - 1, d);
-    }
-    return today;
-  });
+  const [selectedDate, setSelectedDate] = useState(() => (initialDate ? parseDateKey(initialDate) : today));
   const dateKey = getDateKey(selectedDate);
-  const isToday = getDateKey(today) === dateKey;
 
   const [plan, setPlan] = useState<Plan | null>(null);
   const [meditation, setMeditation] = useState("");
   const [application, setApplication] = useState("");
   const [prayer, setPrayer] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
+  const [visibility, setVisibility] = useState<Visibility>("public");
   const [saving, setSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [planLoaded, setPlanLoaded] = useState(false);
   const dirty = useRef(false); // 사용자가 직접 고친 내용이 있을 때만 임시저장
@@ -105,15 +97,16 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     setMeditation("");
     setApplication("");
     setPrayer("");
-    setIsPublic(false);
+    setVisibility("public");
     setHasSaved(false);
+    setDraftSaved(false);
     setLoadFailed(false);
     dirty.current = false;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from("qt_logs")
-        .select("id, meditation, application, prayer, is_public")
+        .select("id, meditation, application, prayer, is_public, is_anonymous")
         .eq("user_id", userId)
         .eq("date", dateKey)
         .maybeSingle();
@@ -128,7 +121,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         setMeditation(data.meditation || "");
         setApplication(data.application || "");
         setPrayer(data.prayer || "");
-        setIsPublic(data.is_public || false);
+        setVisibility(!data.is_public ? "private" : data.is_anonymous ? "anonymous" : "public");
         setHasSaved(true);
       }
       const draft = readDraft(draftKey(userId, dateKey));
@@ -137,6 +130,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
         setApplication(draft.application);
         setPrayer(draft.prayer);
         dirty.current = true;
+        setDraftSaved(true);
         toast({ title: "작성 중이던 내용을 불러왔어요", description: "저장하기를 눌러야 반영돼요." });
       }
     })();
@@ -146,6 +140,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
   useEffect(() => {
     if (!dirty.current) return;
     writeDraft(draftKey(userId, dateKey), { meditation, application, prayer });
+    setDraftSaved(true);
   }, [userId, dateKey, meditation, application, prayer]);
 
   // 본문이 길어 작성 칸이 화면 밖에 있으면 바로가기 버튼을 띄움
@@ -176,15 +171,17 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
           meditation: trimmedMeditation,
           application: trimmedApplication,
           prayer: trimmedPrayer,
-          is_public: isPublic,
+          is_public: visibility !== "private",
+          is_anonymous: visibility === "anonymous",
         },
         { onConflict: "user_id,date" },
       );
       if (error) throw error;
       dirty.current = false;
       writeDraft(draftKey(userId, dateKey), null);
+      setDraftSaved(false);
       setHasSaved(true);
-      toast({ title: "저장되었습니다", description: isPublic ? "공동체와 공유되었어요." : "나만 볼 수 있어요." });
+      toast({ title: "저장되었습니다", description: VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.saved });
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message || "저장 중 오류가 발생했습니다.";
       toast({ title: message, variant: "destructive" });
@@ -205,7 +202,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     {
       key: "application",
       label: "적용",
-      subtitle: "내게 주시는 교훈",
+      subtitle: "오늘 내 삶에 어떻게",
       placeholder: "오늘 말씀을 내 삶에 어떻게 적용할 수 있을까요?",
       value: application,
       onChange: (v: string) => { dirty.current = true; setApplication(v); },
@@ -213,152 +210,146 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
     {
       key: "prayer",
       label: "기도",
-      subtitle: "나의 기도",
+      subtitle: "나만 볼 수 있어요",
       placeholder: "오늘 하나님께 드리는 기도를 적어보세요.",
       value: prayer,
       onChange: (v: string) => { dirty.current = true; setPrayer(v); },
     },
   ];
 
-  return (
-    <div className="px-5 pt-3 pb-8 max-w-lg mx-auto md:max-w-2xl md:px-6 lg:max-w-none lg:px-8">
+  const canShare = hasSaved && typeof navigator !== "undefined" && !!navigator.share;
 
-      {/* ── Header + date navigation ── */}
-      <div className="flex items-center gap-2">
-        <h1 className="font-display text-[24px] text-foreground flex-1">큐티 작성</h1>
+  return (
+    <div className="pb-8 max-w-lg mx-auto md:max-w-2xl lg:max-w-none">
+
+      {/* ── Header: 날짜 이동 ── */}
+      <header className="flex items-center gap-1 px-3 pt-4 pb-2 lg:px-6">
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, -1))}
           aria-label="이전 날"
-          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-foreground hover:bg-secondary"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-[22px] h-[22px]" />
         </button>
-        <span className="text-[14px] text-foreground/80 font-semibold min-w-[64px] text-center tabular-nums">
-          {selectedDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}
-        </span>
+        <div className="flex-1 flex flex-col items-center min-w-0">
+          <h1 className="text-[16px] font-extrabold tracking-[-0.02em]">
+            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 큐티
+          </h1>
+          <span className="text-[12px] text-muted-foreground truncate">
+            {plan?.reference ?? (planLoaded ? "등록된 말씀 없음" : " ")}
+          </span>
+        </div>
         <button
           onClick={() => setSelectedDate(addDays(selectedDate, 1))}
           disabled={dateKey >= getDateKey(today)}
           aria-label="다음 날"
-          className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-foreground hover:bg-secondary disabled:opacity-25 disabled:pointer-events-none"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-[22px] h-[22px]" />
         </button>
-        {!isToday && (
-          <button
-            onClick={() => setSelectedDate(today)}
-            className="text-[13px] text-primary font-semibold px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/15 transition-colors"
-          >
-            오늘
-          </button>
-        )}
-      </div>
+      </header>
 
-      <div className="mt-5 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
+      <div className="px-4 pt-2 lg:px-6 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start">
 
-        {/* ── 말씀: 본문·해설·길잡이 모두 펼친 상태로 표시 (넓은 화면에서는 왼쪽 고정) ── */}
-        <div className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-2 lg:-mr-2">
+        {/* ── 말씀: 본문·해설·길잡이 모두 펼친 상태 (넓은 화면에서는 왼쪽 고정) ── */}
+        <div className="space-y-3.5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-2">
           {!planLoaded ? (
-            <div className="rounded-2xl bg-card shadow-card h-64 animate-pulse" />
+            <div className="rounded-[22px] bg-card border border-border h-64 animate-pulse" />
           ) : plan ? (
             <>
-              <article className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
-                <div className="flex items-center gap-1.5 text-primary mb-1.5">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <p className="text-[12px] font-semibold">{plan.reference}</p>
-                </div>
-                <h2 className="font-display text-[20px] text-foreground leading-snug">{cleanPlanTitle(plan.title, plan.reference)}</h2>
-                <div className="mt-4 pt-4 border-t border-border/60">
-                  <ScripturePassage reference={plan.reference} />
-                </div>
+              <article className="rounded-[22px] bg-card border border-border px-[18px] py-5 space-y-3">
+                <h2 className="text-[19px] font-extrabold tracking-[-0.03em] leading-[1.35]">
+                  {cleanPlanTitle(plan.title, plan.reference)}
+                </h2>
+                <ScripturePassage reference={plan.reference} />
               </article>
 
               {plan.text && (
-                <section className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
-                  <p className="text-[13px] font-bold text-foreground tracking-tight mb-3">말씀 해설</p>
-                  <p className="text-[14px] text-foreground/70 leading-[1.85] whitespace-pre-line">{plan.text}</p>
+                <section className="rounded-[22px] bg-card border border-border px-[18px] py-5">
+                  <p className="text-[13px] font-bold text-muted-foreground mb-2.5">말씀 해설</p>
+                  <p className="text-[15px] text-foreground/80 leading-[1.85] whitespace-pre-line">{plan.text}</p>
                 </section>
               )}
 
               {plan.commentary && (
-                <section className="rounded-2xl bg-card px-5 py-5 md:px-6 shadow-card">
-                  <p className="text-[13px] font-bold text-foreground tracking-tight mb-3">묵상 길잡이</p>
+                <section className="space-y-2">
+                  <p className="text-[13px] font-bold text-muted-foreground px-1">묵상 길잡이</p>
                   <MeditationGuide commentary={plan.commentary} />
                 </section>
               )}
             </>
           ) : (
-            <div className="rounded-2xl bg-card px-5 py-10 text-center shadow-card">
-              <BookOpen className="w-6 h-6 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-[13px] text-muted-foreground">이 날은 등록된 말씀이 없어요</p>
+            <div className="rounded-[22px] bg-card border border-border px-5 py-10 text-center">
+              <BookOpen className="w-6 h-6 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-[14px] text-muted-foreground">이 날은 등록된 말씀이 없어요</p>
             </div>
           )}
         </div>
 
         {/* ── 나의 묵상 ── */}
-        <div ref={formRef} className="mt-8 lg:mt-0 space-y-6 scroll-mt-4">
-          {/* ── Divider ── */}
-          <div className="flex items-center gap-3">
-            <span className="text-[12.5px] font-bold tracking-[0.04em] text-primary">나의 묵상</span>
-            <div className="flex-1 h-px bg-border" />
+        <div ref={formRef} className="mt-6 lg:mt-0 space-y-4 scroll-mt-4">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[13px] font-bold text-muted-foreground">나의 묵상</span>
+            {draftSaved && <span className="text-[12px] text-muted-foreground">임시저장됨</span>}
           </div>
 
-          {/* ── Form fields ── */}
-          <div className="space-y-4">
-            {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
-              <div key={key}>
-                <div className="flex items-baseline gap-1.5 mb-2 px-1">
-                  <span className="font-display text-[15px] text-foreground">
-                    {label}
-                  </span>
-                  <span className="text-[12px] text-muted-foreground">{subtitle}</span>
-                </div>
-                <Textarea
-                  placeholder={placeholder}
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  className="min-h-[140px] bg-card shadow-card border-0 rounded-2xl resize-none leading-[1.8] text-[14px] placeholder:text-muted-foreground/35 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all px-5 py-4"
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* ── Public toggle ── */}
-          <div className="rounded-2xl bg-card shadow-card px-5 py-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {isPublic
-                ? <Globe className="w-[18px] h-[18px] text-primary" />
-                : <Lock className="w-[18px] h-[18px] text-muted-foreground" />
-              }
-              <div>
-                <p className="text-[14px] font-medium text-foreground">공동체와 함께 나누기</p>
-                <p className="text-[12px] text-muted-foreground mt-0.5">묵상/적용만 공유 (기도는 비공개)</p>
-              </div>
+          {formFields.map(({ key, label, subtitle, placeholder, value, onChange }) => (
+            <div key={key} className="space-y-2">
+              <label htmlFor={`qt-${key}`} className="flex items-baseline gap-1.5 px-1">
+                <span className="text-[16px] font-extrabold">{label}</span>
+                <span className="text-[12px] text-muted-foreground">{subtitle}</span>
+              </label>
+              <textarea
+                id={`qt-${key}`}
+                placeholder={placeholder}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="block w-full min-h-[120px] resize-y rounded-2xl border border-border bg-card px-4 py-3.5 text-[15px] leading-[1.7] text-foreground placeholder:text-muted-foreground/60 outline-none transition-colors focus:border-2 focus:border-primary focus:px-[15px] focus:py-[13px]"
+              />
             </div>
-            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-          </div>
+          ))}
 
-          {/* ── Action buttons ── */}
-          <div className="flex gap-3">
-            <button
-              onClick={handleSave}
-              disabled={saving || loadFailed}
-              className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-2xl py-4 text-[15px] font-semibold flex items-center justify-center gap-2 tracking-tight transition-colors active:scale-[0.98]"
-            >
-              <Save className="w-[18px] h-[18px]" />
-              {saving ? "저장 중..." : hasSaved ? "수정하기" : "저장하기"}
-            </button>
-            {hasSaved && typeof navigator !== "undefined" && navigator.share && (
+          {/* ── 공개 범위 + 저장 ── */}
+          <div className="sticky bottom-[calc(57px+env(safe-area-inset-bottom))] md:bottom-4 z-30 -mx-4 lg:mx-0 rounded-none lg:rounded-2xl bg-card border-y lg:border border-border px-4 pt-3 pb-3 space-y-2.5">
+            <div role="radiogroup" aria-label="공개 범위" className="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">
+              {VISIBILITY_OPTIONS.map((o) => {
+                const active = visibility === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setVisibility(o.value)}
+                    className={`h-9 rounded-[9px] text-[13px] transition-colors ${
+                      active ? "bg-card text-foreground font-bold shadow-xs" : "text-muted-foreground font-medium"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  const text = [`[QT Connect] ${dateKey}`, plan?.reference, plan?.title, '', '묵상: ' + meditation.slice(0, 100), '적용: ' + application.slice(0, 100)].filter(Boolean).join('\n');
-                  navigator.share({ title: 'QT 나눔', text }).catch(() => {});
-                }}
-                className="w-14 bg-secondary hover:bg-secondary/80 text-foreground rounded-2xl flex items-center justify-center transition-colors active:scale-[0.98]"
+                onClick={handleSave}
+                disabled={saving || loadFailed}
+                className="flex-1 h-[52px] rounded-2xl bg-primary text-primary-foreground text-[16px] font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors active:scale-[0.98]"
               >
-                <Share2 className="w-[18px] h-[18px]" />
+                {saving ? "저장 중..." : visibility === "private" ? (hasSaved ? "수정하기" : "저장하기") : hasSaved ? "수정하고 나누기" : "저장하고 나누기"}
               </button>
-            )}
+              {canShare && (
+                <button
+                  onClick={() => {
+                    const text = [`[QT Connect] ${dateKey}`, plan?.reference, plan?.title, "", "묵상: " + meditation.slice(0, 100), "적용: " + application.slice(0, 100)].filter(Boolean).join("\n");
+                    navigator.share({ title: "QT 나눔", text }).catch(() => {});
+                  }}
+                  aria-label="다른 앱으로 공유"
+                  className="w-[52px] h-[52px] rounded-2xl bg-secondary text-foreground flex items-center justify-center hover:bg-secondary/80"
+                >
+                  <Share2 className="w-[18px] h-[18px]" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

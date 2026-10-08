@@ -284,6 +284,7 @@ export type Database = {
       }
       qt_logs: {
         Row: {
+          is_anonymous: boolean
           application: string | null
           created_at: string
           date: string
@@ -296,6 +297,7 @@ export type Database = {
           user_name: string
         }
         Insert: {
+          is_anonymous?: boolean
           application?: string | null
           created_at?: string
           date: string
@@ -308,6 +310,7 @@ export type Database = {
           user_name?: string
         }
         Update: {
+          is_anonymous?: boolean
           application?: string | null
           created_at?: string
           date?: string
@@ -410,6 +413,24 @@ export type Database = {
           is_answered: boolean
           answered_at: string | null
           created_at: string
+        }[]
+      }
+      get_shared_logs: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          id: string
+          user_id: string | null
+          user_name: string
+          avatar_url: string | null
+          date: string
+          meditation: string
+          application: string
+          created_at: string
+          is_anonymous: boolean
+          is_mine: boolean
+          like_count: number
+          comment_count: number
+          liked: boolean
         }[]
       }
       get_monthly_ranking: {

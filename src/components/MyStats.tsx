@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Flame, CalendarDays, BookOpen, TrendingUp } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateBadges, type BadgeWithStatus } from "@/lib/badges";
 import { calcStreaks } from "@/lib/streak";
@@ -7,6 +7,7 @@ import BadgeGrid from "./BadgeGrid";
 
 interface MyStatsProps {
   userId: string;
+  middle?: ReactNode; // 내 기록 요약과 달력 사이에 넣을 내용 (함께 탭의 지체 목록)
 }
 
 interface StatsData {
@@ -19,7 +20,7 @@ interface StatsData {
   badges: BadgeWithStatus[];
 }
 
-export default function MyStats({ userId }: MyStatsProps) {
+export default function MyStats({ userId, middle }: MyStatsProps) {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -93,33 +94,26 @@ export default function MyStats({ userId }: MyStatsProps) {
 
   return (
     <div className="space-y-3">
-      {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <Flame className="w-4 h-4 text-primary" />
-          </div>
-          <p className="text-2xl font-bold text-foreground">{stats.currentStreak}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">연속 묵상</p>
+      {/* Stat tiles */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-[18px] bg-card border border-border px-2 py-3.5 flex flex-col items-center gap-1">
+          <span className="text-[24px] font-extrabold tabular-nums text-primary">{stats.currentStreak}</span>
+          <span className="text-[12px] text-muted-foreground">연속</span>
         </div>
-        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-          </div>
-          <p className="text-2xl font-bold text-foreground">{stats.longestStreak}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">최장 연속</p>
+        <div className="rounded-[18px] bg-card border border-border px-2 py-3.5 flex flex-col items-center gap-1">
+          <span className="text-[24px] font-extrabold tabular-nums">{stats.thisMonthDays}</span>
+          <span className="text-[12px] text-muted-foreground">이번 달</span>
         </div>
-        <div className="rounded-2xl bg-card shadow-card px-3 py-4 text-center">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <BookOpen className="w-4 h-4 text-primary" />
-          </div>
-          <p className="text-2xl font-bold text-foreground">{stats.totalDays}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">총 묵상일</p>
+        <div className="rounded-[18px] bg-card border border-border px-2 py-3.5 flex flex-col items-center gap-1">
+          <span className="text-[24px] font-extrabold tabular-nums">{stats.totalDays}</span>
+          <span className="text-[12px] text-muted-foreground">전체</span>
         </div>
       </div>
 
+      {middle}
+
       {/* Monthly heatmap */}
-      <div className="rounded-2xl bg-card px-4 py-4 shadow-card">
+      <div className="rounded-[22px] bg-card border border-border p-[18px]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">

@@ -86,14 +86,15 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
       <div className="flex items-center gap-2">
         <Button
           onClick={() => setComposerOpen(true)}
-          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11 text-[13px] font-semibold shadow-soft gap-2"
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl h-12 text-[15px] font-bold gap-2"
         >
           <Plus className="w-4 h-4" />
           기도 제목 올리기
         </Button>
         <button
           onClick={fetchPrayers}
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent border border-border/40 transition-all shadow-xs"
+          aria-label="새로고침"
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground bg-card border border-border transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
         </button>

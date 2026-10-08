@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,26 +9,27 @@ interface LikeButtonProps {
   userId: string;
   count: number;
   hasLiked: boolean;
-  onChange: () => void;
+  onChange?: () => void;
   size?: "sm" | "md";
 }
 
-export default function LikeButton({
-  contentType,
-  contentId,
-  userId,
-  count,
-  hasLiked,
-  onChange,
-  size = "md",
-}: LikeButtonProps) {
+// '아멘' 반응. 누르면 바로 반영하고(낙관적 업데이트) 실패하면 되돌림
+export default function LikeButton({ contentType, contentId, userId, count, hasLiked, onChange }: LikeButtonProps) {
   const { toast } = useToast();
+  const [liked, setLiked] = useState(hasLiked);
+  const [total, setTotal] = useState(count);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => { setLiked(hasLiked); setTotal(count); }, [hasLiked, count]);
+
   const toggle = async () => {
+    if (submitting) return;
+    const next = !liked;
     setSubmitting(true);
+    setLiked(next);
+    setTotal((t) => t + (next ? 1 : -1));
     try {
-      if (hasLiked) {
+      if (!next) {
         const { error } = await supabase
           .from("likes")
           .delete()
@@ -42,32 +43,26 @@ export default function LikeButton({
           .insert({ content_type: contentType, content_id: contentId, user_id: userId });
         if (error && error.code !== "23505") throw error; // 연타로 인한 중복은 무시
       }
-      onChange();
+      onChange?.();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "오류가 발생했습니다";
-      toast({ title: msg, variant: "destructive" });
+      setLiked(!next);
+      setTotal((t) => t + (next ? -1 : 1));
+      toast({ title: (e as { message?: string })?.message || "오류가 발생했습니다", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const sizeClasses = size === "sm"
-    ? "px-2 py-1 text-[11px] gap-1"
-    : "px-3 py-1.5 text-[12px] gap-1.5";
-  const iconSize = size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5";
-
   return (
     <button
       onClick={toggle}
-      disabled={submitting}
-      className={`flex items-center ${sizeClasses} rounded-lg font-semibold transition-all ${
-        hasLiked
-          ? "bg-rose-500/10 text-rose-600 border border-rose-200/50"
-          : "bg-muted/50 text-muted-foreground hover:bg-rose-500/5 hover:text-rose-500 border border-transparent"
+      aria-pressed={liked}
+      className={`flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[13px] transition-colors ${
+        liked ? "bg-primary-soft text-primary font-bold" : "bg-secondary text-foreground/80 font-medium hover:bg-secondary/70"
       }`}
     >
-      <Heart className={`${iconSize} ${hasLiked ? "fill-rose-500 text-rose-500" : ""}`} />
-      {count > 0 && <span>{count}</span>}
+      <Heart className={`w-4 h-4 ${liked ? "fill-current" : ""}`} />
+      아멘{total > 0 && ` ${total}`}
     </button>
   );
 }

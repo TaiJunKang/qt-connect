@@ -30,7 +30,7 @@ export default function UserAvatar({ name, avatarUrl, size = "sm", className = "
   }
 
   return (
-    <div className={`${s.box} rounded-full bg-gradient-to-br ${color} flex items-center justify-center ${s.text} font-bold text-white flex-shrink-0 ${className}`}>
+    <div className={`${s.box} rounded-full ${color} flex items-center justify-center ${s.text} font-bold text-white flex-shrink-0 ${className}`}>
       {initial}
     </div>
   );

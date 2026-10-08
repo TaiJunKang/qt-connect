@@ -4,61 +4,61 @@
 
 @layer base {
   :root {
-    /* ── 묵상 노트: 크림색 종이 + 잉크 + 테라코타 ── */
-    --background:  38 33% 96%;
-    --foreground:  24 14% 14%;
+    /* ── 묵상 노트: 따뜻한 종이 + 잉크 + 테라코타 (+ 세이지 보조) ── */
+    --background:  38 41% 95%;   /* #F7F3EC */
+    --foreground:  27 19% 11%;   /* #221C17 */
 
-    --card:        40 50% 99%;
-    --card-foreground: 24 14% 14%;
+    --card:        0 0% 100%;
+    --card-foreground: 27 19% 11%;
 
-    --popover:     40 50% 99%;
-    --popover-foreground: 24 14% 14%;
+    --popover:     0 0% 100%;
+    --popover-foreground: 27 19% 11%;
 
-    /* Primary: 테라코타 */
-    --primary:     14 52% 46%;
-    --primary-foreground: 40 50% 98%;
+    --primary:     16 59% 45%;   /* #B4532F */
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 24 56% 90%;  /* #F4E3D8 */
 
-    --secondary:   36 28% 92%;
-    --secondary-foreground: 24 14% 22%;
+    --secondary:   36 35% 92%;   /* #F1EBE2 */
+    --secondary-foreground: 27 19% 20%;
 
-    --muted:       36 22% 92%;
-    --muted-foreground: 25 8% 42%;
+    --muted:       36 35% 92%;
+    --muted-foreground: 28 9% 39%; /* #6E645B */
 
-    --accent:      34 30% 92%;
-    --accent-foreground: 14 50% 38%;
+    --accent:      36 35% 92%;
+    --accent-foreground: 16 59% 38%;
 
-    --destructive:         0 65% 48%;
+    --sage:        143 16% 36%;  /* #4D6A58 */
+    --sage-soft:   128 17% 91%;  /* #E3EBE4 */
+
+    --destructive:         0 65% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 34 20% 86%;
-    --input:  34 18% 84%;
-    --ring:   14 52% 46%;
+    --border: 34 31% 87%;        /* #E8DFD3 */
+    --input:  34 31% 87%;
+    --ring:   16 59% 45%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* ── Custom tokens ── */
-    --scripture-bg:   40 40% 97%;
+    --scripture-bg:   38 41% 97%;
     --scripture-line: 30 25% 78%;
     --gold:           36 55% 46%;
     --gold-muted:     36 30% 90%;
-    --warm-glow:      38 40% 97%;
+    --warm-glow:      38 41% 97%;
 
-    /* ── Shadow: 종이 같은 얇은 테두리 + 아주 옅은 그림자 ── */
-    --shadow-xs:  0 1px 2px 0 hsl(25 30% 20% / 0.04);
-    --shadow-sm:  0 1px 3px 0 hsl(25 30% 20% / 0.06);
-    --shadow-md:  0 4px 14px -4px hsl(25 30% 20% / 0.10);
-    --shadow-lg:  0 14px 36px -8px hsl(25 30% 20% / 0.16);
-    --shadow-card: 0 0 0 1px hsl(var(--border) / 0.7), 0 1px 2px 0 hsl(25 30% 20% / 0.03);
+    --shadow-xs:  0 1px 2px 0 hsl(27 30% 15% / 0.06);
+    --shadow-sm:  0 1px 3px 0 hsl(27 30% 15% / 0.08);
+    --shadow-md:  0 4px 14px -4px hsl(27 30% 15% / 0.12);
+    --shadow-lg:  0 14px 36px -8px hsl(27 30% 15% / 0.18);
+    --shadow-card: 0 0 0 1px hsl(var(--border));
 
-    /* ── Sidebar ── */
-    --sidebar-background:        38 30% 94%;
-    --sidebar-foreground:        24 14% 18%;
-    --sidebar-primary:           14 52% 46%;
-    --sidebar-primary-foreground: 40 50% 98%;
-    --sidebar-accent:            40 50% 99%;
-    --sidebar-accent-foreground: 24 14% 18%;
-    --sidebar-border:            34 20% 86%;
-    --sidebar-ring:              14 52% 46%;
+    --sidebar-background:        38 41% 95%;
+    --sidebar-foreground:        27 19% 11%;
+    --sidebar-primary:           16 59% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:            0 0% 100%;
+    --sidebar-accent-foreground: 27 19% 11%;
+    --sidebar-border:            34 31% 87%;
+    --sidebar-ring:              16 59% 45%;
   }
 
   .dark {
@@ -74,6 +74,9 @@
 
     --primary:     16 60% 60%;
     --primary-foreground: 25 10% 8%;
+    --primary-soft: 16 30% 18%;
+    --sage:        143 20% 60%;
+    --sage-soft:   143 12% 16%;
 
     --secondary:   25 8% 15%;
     --secondary-foreground: 36 15% 82%;
@@ -131,13 +134,19 @@
     font-feature-settings: 'ss01', 'cv01';
     line-height: 1.6;
     letter-spacing: -0.01em;
+    /* 한국어는 단어(어절) 단위로 줄바꿈, 긴 영문/URL만 강제로 끊음 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
+
+  p, li { text-wrap: pretty; }
 
   h1, h2, h3 {
     font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.3;
+    text-wrap: balance;
   }
 
   /* 화면 제목: 굵은 고딕 */

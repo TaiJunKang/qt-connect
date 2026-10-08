@@ -133,27 +133,22 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
     <div className="px-4 pt-7 pb-6 space-y-5 max-w-lg mx-auto md:max-w-2xl md:px-6">
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
-          <Settings className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <h1 className="font-display text-[24px] text-foreground">설정</h1>
-      </div>
+      <h1 className="text-[25px] font-extrabold tracking-[-0.03em] px-1">나</h1>
 
       {/* ── Profile card ── */}
-      <div className="rounded-2xl bg-card shadow-card overflow-hidden">
-        <div className="h-16 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
-        <div className="px-5 pb-5 -mt-8">
-          <div className="flex items-end gap-4">
+      <div className="rounded-[22px] bg-card border border-border overflow-hidden">
+        <div className="p-[18px]">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="relative w-16 h-16 rounded-2xl flex-shrink-0 shadow-soft border-4 border-card overflow-hidden group"
+              aria-label="프로필 사진 바꾸기"
+              className="relative w-16 h-16 rounded-full flex-shrink-0 overflow-hidden group"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                <div className="w-full h-full bg-primary flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary-foreground">{initial}</span>
                 </div>
               )}
@@ -172,16 +167,16 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
               className="hidden"
               onChange={handleAvatarUpload}
             />
-            <div className="flex-1 min-w-0 pb-1">
-              <p className="text-[16px] font-bold text-foreground truncate">{displayName || "사용자"}</p>
-              <p className="text-[12px] text-muted-foreground/60 truncate">{email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[18px] font-extrabold text-foreground truncate">{displayName || "사용자"}</p>
+              <p className="text-[13px] text-muted-foreground truncate">{email}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Menu items ── */}
-      <div className="rounded-2xl bg-card shadow-card divide-y divide-border/30 overflow-hidden">
+      <div className="rounded-[22px] bg-card border border-border divide-y divide-border overflow-hidden">
         {/* My Archive */}
         <button
           onClick={() => setShowArchive(true)}

@@ -99,7 +99,7 @@ const Index = () => {
   const renderTab = () => {
     switch (activeTab) {
       case "home":
-        return <HomeTab onWriteClick={(date) => { setWriteDate(date); setActiveTab("write"); }} userId={user.id} />;
+        return <HomeTab onWriteClick={(date) => { setWriteDate(date); setActiveTab("write"); }} onOpenCommunity={() => setActiveTab("community")} userId={user.id} displayName={displayName} />;
       case "write":
         return <WriteTab key={writeDate} userId={user.id} userDisplayName={displayName} initialDate={writeDate} />;
       case "community":
@@ -137,7 +137,7 @@ const Index = () => {
       {/* Main content area */}
       <div className="flex-1 md:ml-60">
         <div className={`max-w-lg mx-auto md:max-w-2xl min-h-screen flex flex-col ${activeTab === "write" ? "lg:max-w-6xl" : ""}`}>
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-6 md:pt-2">
+          <main className="flex-1 pb-24 md:pb-6 md:pt-2">
             {renderTab()}
           </main>
         </div>

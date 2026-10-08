@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Users, HandHeart } from "lucide-react";
-import MeditationShare from "./community/MeditationShare";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getDateKey } from "@/lib/date";
+import MeditationShare, { type FeedRange } from "./community/MeditationShare";
 import PrayerShare from "./community/PrayerShare";
 
 interface CommunityTabProps {
@@ -10,56 +11,78 @@ interface CommunityTabProps {
 
 type SubTab = "meditation" | "prayer";
 
+const SUB_TABS: { id: SubTab; label: string }[] = [
+  { id: "meditation", label: "묵상" },
+  { id: "prayer", label: "기도제목" },
+];
+
+const RANGES: { id: FeedRange; label: string }[] = [
+  { id: "today", label: "오늘" },
+  { id: "week", label: "이번 주" },
+];
+
 export default function CommunityTab({ userId, userDisplayName }: CommunityTabProps) {
   const [subTab, setSubTab] = useState<SubTab>("meditation");
+  const [range, setRange] = useState<FeedRange>("today");
+  const [reference, setReference] = useState<string | null>(null);
+  const [count, setCount] = useState<number | null>(null);
 
-  const dateStr = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+  useEffect(() => {
+    supabase
+      .from("qt_plans")
+      .select("reference")
+      .eq("date", getDateKey(new Date()))
+      .maybeSingle()
+      .then(({ data }) => setReference(data?.reference ?? null));
+  }, []);
+
+  const summary = [reference, subTab === "meditation" && range === "today" && count !== null ? `${count}명` : null]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="px-4 pt-7 pb-6 space-y-5 max-w-lg mx-auto md:max-w-2xl md:px-6">
+    <div className="px-4 pt-6 pb-6 space-y-3.5 max-w-lg mx-auto md:max-w-2xl md:px-6">
+      <header className="flex items-end justify-between gap-3 px-1">
+        <h1 className="text-[25px] font-extrabold tracking-[-0.03em]">나눔</h1>
+        {summary && <span className="text-[13px] text-muted-foreground pb-1">{summary}</span>}
+      </header>
 
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
-          <Users className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <div>
-          <p className="text-[11px] text-muted-foreground font-medium tracking-[0.1em] uppercase">
-            {dateStr}
-          </p>
-          <h1 className="font-display text-[24px] text-foreground">공동체</h1>
-        </div>
+      <div role="tablist" className="grid grid-cols-2 gap-1 rounded-xl bg-secondary p-1">
+        {SUB_TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={subTab === t.id}
+            onClick={() => setSubTab(t.id)}
+            className={`h-[38px] rounded-[9px] text-[14px] transition-colors ${
+              subTab === t.id ? "bg-card text-foreground font-bold shadow-xs" : "text-muted-foreground font-medium"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Sub-tab switcher */}
-      <div className="inline-flex w-full p-1 rounded-2xl bg-muted/60 border border-border/40">
-        <button
-          onClick={() => setSubTab("meditation")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-semibold rounded-xl transition-all ${
-            subTab === "meditation"
-              ? "bg-card text-primary shadow-xs"
-              : "text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          묵상 나눔
-        </button>
-        <button
-          onClick={() => setSubTab("prayer")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[13px] font-semibold rounded-xl transition-all ${
-            subTab === "prayer"
-              ? "bg-card text-primary shadow-xs"
-              : "text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <HandHeart className="w-3.5 h-3.5" />
-          기도 제목
-        </button>
-      </div>
-
-      {/* Content */}
       {subTab === "meditation" ? (
-        <MeditationShare userId={userId} userDisplayName={userDisplayName} />
+        <>
+          <div className="flex gap-2">
+            {RANGES.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => setRange(r.id)}
+                aria-pressed={range === r.id}
+                className={`h-8 px-3.5 rounded-full text-[13px] transition-colors ${
+                  range === r.id
+                    ? "bg-foreground text-background font-bold"
+                    : "bg-card border border-border text-foreground/80 font-medium hover:bg-secondary"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <MeditationShare userId={userId} userDisplayName={userDisplayName} range={range} onCount={setCount} />
+        </>
       ) : (
         <PrayerShare userId={userId} userDisplayName={userDisplayName} />
       )}

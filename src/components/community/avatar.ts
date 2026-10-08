@@ -1,10 +1,11 @@
+// 묵상 노트 톤의 차분한 단색 (흰 글자 대비 4.5:1 이상)
 export const AVATAR_COLORS = [
-  "from-rose-400 to-pink-500",
-  "from-violet-400 to-purple-500",
-  "from-blue-400 to-indigo-500",
-  "from-emerald-400 to-teal-500",
-  "from-amber-400 to-orange-500",
-  "from-cyan-400 to-sky-500",
+  "bg-[#4D6A58]",
+  "bg-[#B4532F]",
+  "bg-[#6F5A48]",
+  "bg-[#4F6378]",
+  "bg-[#7A5C6E]",
+  "bg-[#5E6B3A]",
 ];
 
 export function getAvatarColor(name: string) {
