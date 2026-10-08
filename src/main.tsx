@@ -5,15 +5,13 @@ import "./index.css";
 import { registerSW } from "virtual:pwa-register";
 
 // 새 버전이 배포되면 서비스워커가 바로 교체되고 페이지가 새로고침됨.
-// 홈 화면에 설치한 앱은 백그라운드에 오래 머무르므로, 다시 화면에 올라올 때와 1시간마다 업데이트를 확인.
+// 홈 화면에 설치한 앱은 백그라운드에 오래 머무르므로, 다시 화면에 올라올 때 업데이트를 확인 (sw.js 한 번 조회, DB 호출 없음).
 registerSW({
   immediate: true,
   onRegisteredSW(_url, registration) {
     if (!registration) return;
-    const check = () => { registration.update().catch(() => {}); };
-    setInterval(check, 60 * 60 * 1000);
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") check();
+      if (document.visibilityState === "visible") registration.update().catch(() => {});
     });
   },
 });
