@@ -15,6 +15,9 @@ interface Member {
   count: number;
 }
 
+// 매달 공동체가 함께 채우는 묵상 목표 (비공개 묵상 포함, 한 사람의 하루 묵상 = 1번)
+const MONTHLY_GOAL = 200;
+
 const prevOf = (y: number, m: number) => (m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 });
 
 export default function RankingTab({ userId }: RankingTabProps) {
@@ -57,7 +60,8 @@ export default function RankingTab({ userId }: RankingTabProps) {
 
   const total = members.reduce((sum, m) => sum + m.count, 0);
   const prevLabel = `${prevOf(year, month).m}월`;
-  const ratio = prevTotal > 0 ? Math.round((total / prevTotal) * 100) : 0;
+  const progress = Math.min(100, Math.round((total / MONTHLY_GOAL) * 100));
+  const remaining = Math.max(0, MONTHLY_GOAL - total);
 
   const go = (delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
@@ -120,22 +124,29 @@ export default function RankingTab({ userId }: RankingTabProps) {
         </div>
       </header>
 
-      {/* ── 공동체 합계 ── */}
+      {/* ── 공동체 목표 ── */}
       <section className="rounded-3xl bg-foreground text-background px-5 py-[22px] space-y-3.5">
         <p className="text-[13px] font-medium opacity-75">
-          {isCurrentMonth ? "이번 달" : `${month}월에`} 우리 공동체가 함께한 묵상
+          {isCurrentMonth ? "이번 달" : `${month}월`} 우리 공동체 묵상 목표
         </p>
         <div className="flex items-baseline gap-1.5">
           <span className="text-[44px] font-extrabold tracking-[-0.03em] leading-none tabular-nums">{loading ? "–" : total}</span>
-          <span className="text-[16px] font-medium opacity-75">번{prevTotal > 0 && ` / ${prevLabel} ${prevTotal}번`}</span>
+          <span className="text-[16px] font-medium opacity-75">/ {MONTHLY_GOAL}번</span>
         </div>
-        {prevTotal > 0 && (
-          <div className="h-2.5 rounded-full bg-background/20 overflow-hidden" role="img" aria-label={`${prevLabel} 대비 ${ratio}%`}>
-            <div className="h-full rounded-full bg-[#E08A5F]" style={{ width: `${Math.min(100, ratio)}%` }} />
-          </div>
-        )}
-        <p className="text-[13px] opacity-75 leading-relaxed">
-          {members.length > 0 && `${members.length}명이 함께했어요. `}비공개로 쓴 묵상도 함께 세요. 내용은 보이지 않아요.
+        <div className="h-2.5 rounded-full bg-background/20 overflow-hidden" role="img" aria-label={`목표 ${MONTHLY_GOAL}번 중 ${total}번, ${progress}%`}>
+          <div className="h-full rounded-full bg-[#E08A5F] transition-[width] duration-700" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="text-[14px] font-semibold leading-relaxed">
+          {loading
+            ? " "
+            : remaining === 0
+              ? "목표를 다 채웠어요! 함께해 주셔서 감사해요."
+              : isCurrentMonth
+                ? `목표까지 ${remaining}번 남았어요. ${members.length > 0 ? `${members.length}명이 함께하는 중이에요.` : "첫 묵상을 시작해 주세요."}`
+                : `${progress}% 채웠어요. ${members.length}명이 함께했어요.`}
+        </p>
+        <p className="text-[12px] opacity-60 leading-relaxed">
+          {prevTotal > 0 && `${prevLabel}에는 ${prevTotal}번. `}한 사람이 하루 묵상하면 1번, 비공개 묵상도 함께 세요.
         </p>
       </section>
 
