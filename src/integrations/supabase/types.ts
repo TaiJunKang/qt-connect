@@ -210,6 +210,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           display_name: string | null
           id: string
@@ -218,6 +219,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
@@ -226,6 +228,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
@@ -394,6 +397,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_prayer_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          user_id: string | null
+          user_name: string
+          title: string
+          content: string
+          category: string
+          is_anonymous: boolean
+          is_answered: boolean
+          answered_at: string | null
+          created_at: string
+        }[]
+      }
       get_monthly_ranking: {
         Args: { p_year: number; p_month: number }
         Returns: {

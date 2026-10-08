@@ -18,11 +18,8 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
   const fetchPrayers = useCallback(async () => {
     setLoading(true);
 
-    // 1. Fetch all prayer requests
-    const { data: requests, error: reqErr } = await supabase
-      .from("prayer_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
+    // 1. Fetch all prayer requests (익명 글은 서버에서 작성자 정보를 가려서 반환)
+    const { data: requests, error: reqErr } = await supabase.rpc("get_prayer_requests");
 
     if (reqErr || !requests) {
       setLoading(false);
@@ -31,7 +28,7 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
 
     // 2. Fetch responses, comments, and avatar URLs in parallel
     const prayerIds = requests.map((r) => r.id);
-    const userIds = [...new Set(requests.map((r) => r.user_id))];
+    const userIds = [...new Set(requests.map((r) => r.user_id).filter((id): id is string => !!id))];
     let responses: { prayer_id: string; user_id: string }[] = [];
     let comments: { content_id: string }[] = [];
     const avatarMap = new Map<string, string | null>();
@@ -64,7 +61,7 @@ export default function PrayerShare({ userId, userDisplayName }: PrayerShareProp
       id: r.id,
       user_id: r.user_id,
       user_name: r.user_name,
-      avatar_url: avatarMap.get(r.user_id) ?? null,
+      avatar_url: r.user_id ? avatarMap.get(r.user_id) ?? null : null,
       title: r.title,
       content: r.content,
       category: r.category,

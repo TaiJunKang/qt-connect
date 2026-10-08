@@ -8,6 +8,7 @@ interface RankingTabProps {
 }
 
 interface RankEntry {
+  user_id: string;
   user_name: string;
   count: number;
 }
@@ -20,29 +21,13 @@ export default function RankingTab({ userId }: RankingTabProps) {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [ranking, setRanking] = useState<RankEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myName, setMyName] = useState<string | null>(null);
-
-  // Get current user's display name for highlighting
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("user_id", data.user.id)
-        .single();
-      setMyName(profile?.display_name ?? null);
-    });
-  }, []);
-
   const fetchRanking = async () => {
     setLoading(true);
     // 비공개 QT도 포함해 사용자별 참여일 수를 집계 (DB 함수, 내용은 노출 안 됨)
-    const { data } = await supabase.rpc("get_monthly_ranking", { p_year: year, p_month: month });
+    const { data, error } = await supabase.rpc("get_monthly_ranking", { p_year: year, p_month: month });
 
-    if (data) {
-      setRanking(data.map((row) => ({ user_name: row.user_name, count: Number(row.count) })));
-    }
+    // 실패 시 이전 달 순위가 새 달 라벨 아래 남지 않도록 비움
+    setRanking(error || !data ? [] : data.map((row) => ({ user_id: row.user_id, user_name: row.user_name, count: Number(row.count) })));
     setLoading(false);
   };
 
@@ -142,13 +127,13 @@ export default function RankingTab({ userId }: RankingTabProps) {
       ) : (
         <div className="space-y-2.5">
           {ranking.map((entry, idx) => {
-            const isMe = myName && entry.user_name === myName;
+            const isMe = entry.user_id === userId;
             const pct = Math.round((entry.count / daysInMonth) * 100);
             const isTop3 = idx < 3;
 
             return (
               <div
-                key={entry.user_name}
+                key={entry.user_id}
                 className={`rounded-2xl overflow-hidden border transition-all ${
                   isMe
                     ? "border-primary/40 bg-primary/5 shadow-sm"

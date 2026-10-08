@@ -8,7 +8,7 @@ import UserAvatar from "../UserAvatar";
 
 export interface PrayerItem {
   id: string;
-  user_id: string;
+  user_id: string | null; // 타인의 익명 글이면 null
   user_name: string;
   avatar_url: string | null;
   title: string;
@@ -63,7 +63,7 @@ export default function PrayerCard({ prayer, currentUserId, currentUserName, onC
         const { error } = await supabase
           .from("prayer_responses")
           .insert({ prayer_id: prayer.id, user_id: currentUserId });
-        if (error) throw error;
+        if (error && error.code !== "23505") throw error; // 연타로 인한 중복은 무시
       }
       onChange();
     } catch (e) {
