@@ -183,5 +183,29 @@
   }
 }
 
+/* ── 어린 양 애니메이션 ── */
+@keyframes lamb-hop {
+  0%, 60%, 100% { transform: translateY(0) scale(1, 1); }
+  70% { transform: translateY(0) scale(1.06, 0.94); }
+  80% { transform: translateY(-9px) scale(0.97, 1.04); }
+  90% { transform: translateY(0) scale(1.04, 0.96); }
+}
+@keyframes lamb-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.025, 0.975); }
+}
+@keyframes lamb-z {
+  0% { opacity: 0; transform: translate(0, 4px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-4px, -8px); }
+}
+.lamb-hop { animation: lamb-hop 2.4s ease-in-out infinite; }
+.lamb-breathe { animation: lamb-breathe 3.2s ease-in-out infinite; }
+.lamb-z { animation: lamb-z 2.8s ease-out infinite; transform-box: fill-box; }
+.lamb-z2 { animation-delay: 1.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .lamb-hop, .lamb-breathe, .lamb-z { animation: none; }
+}
+
 /* ── Smooth scroll ── */
 html { scroll-behavior: smooth; }

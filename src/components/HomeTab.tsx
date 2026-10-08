@@ -9,6 +9,7 @@ import WeeklyReview from "./WeeklyReview";
 import AnnouncementBanner from "./AnnouncementBanner";
 import ScripturePassage from "./ScripturePassage";
 import UserAvatar from "./UserAvatar";
+import LambPet, { LAMB_START_DATE } from "./LambPet";
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -134,6 +135,9 @@ export default function HomeTab({ onWriteClick, onOpenCommunity, userId, display
           <Search className="w-5 h-5" />
         </button>
       </header>
+
+      {/* ── 어린 양: 오늘 썼으면 깡총, 아직이면 꾸벅 ── */}
+      <LambPet total={[...myDates].filter((d) => d >= LAMB_START_DATE).length} happy={myDates.has(todayKey)} />
 
       {/* ── 이번 주 (날짜 이동 겸용) ── */}
       <section className="rounded-[20px] bg-card border border-border p-4 space-y-3">
