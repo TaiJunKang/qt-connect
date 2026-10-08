@@ -12,6 +12,7 @@ import RankingTab from "@/components/RankingTab";
 import SettingsTab from "@/components/SettingsTab";
 import InstallPrompt from "@/components/InstallPrompt";
 import PasswordResetDialog from "@/components/PasswordResetDialog";
+import LambBuddy from "@/components/lamb/LambBuddy";
 import type { User } from "@supabase/supabase-js";
 import type { Tab } from "@/lib/navigation";
 
@@ -145,6 +146,9 @@ const Index = () => {
 
       {/* Bottom navigation — hidden on desktop */}
       <BottomNav activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
+
+      {/* 모든 화면을 따라다니는 어린 양 */}
+      <LambBuddy userId={user.id} raised={activeTab === "write"} />
 
       {/* PWA install prompt */}
       <InstallPrompt />

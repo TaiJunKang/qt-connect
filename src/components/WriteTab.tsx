@@ -6,6 +6,7 @@ import { getDateKey, parseDateKey } from "@/lib/date";
 import { cleanPlanTitle } from "@/lib/plan";
 import ScripturePassage from "./ScripturePassage";
 import MeditationGuide from "./MeditationGuide";
+import { QT_SAVED_EVENT } from "./lamb/LambBuddy";
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -181,6 +182,7 @@ export default function WriteTab({ userId, userDisplayName, initialDate }: Write
       writeDraft(draftKey(userId, dateKey), null);
       setDraftSaved(false);
       setHasSaved(true);
+      window.dispatchEvent(new Event(QT_SAVED_EVENT)); // 어린 양이 바로 자라도록
       toast({ title: "저장되었습니다", description: VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.saved });
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message || "저장 중 오류가 발생했습니다.";
