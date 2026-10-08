@@ -14,14 +14,6 @@ interface RankEntry {
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
-function getMonthRange(year: number, month: number) {
-  // month: 1-indexed
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const start = `${year}-${pad(month)}-01T00:00:00.000Z`;
-  const nextMonth = month === 12 ? `${year + 1}-01-01T00:00:00.000Z` : `${year}-${pad(month + 1)}-01T00:00:00.000Z`;
-  return { start, end: nextMonth };
-}
-
 export default function RankingTab({ userId }: RankingTabProps) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -45,26 +37,11 @@ export default function RankingTab({ userId }: RankingTabProps) {
 
   const fetchRanking = async () => {
     setLoading(true);
-    const { start, end } = getMonthRange(year, month);
-
-    // Fetch all public + own logs in the month, count unique dates per user
-    const { data } = await supabase
-      .from("qt_logs")
-      .select("user_name, date")
-      .gte("created_at", start)
-      .lt("created_at", end);
+    // 비공개 QT도 포함해 사용자별 참여일 수를 집계 (DB 함수, 내용은 노출 안 됨)
+    const { data } = await supabase.rpc("get_monthly_ranking", { p_year: year, p_month: month });
 
     if (data) {
-      // Count unique dates per user_name (one QT per day counts as 1)
-      const map = new Map<string, Set<string>>();
-      for (const row of data) {
-        if (!map.has(row.user_name)) map.set(row.user_name, new Set());
-        map.get(row.user_name)!.add(row.date);
-      }
-      const entries: RankEntry[] = Array.from(map.entries())
-        .map(([user_name, dates]) => ({ user_name, count: dates.size }))
-        .sort((a, b) => b.count - a.count);
-      setRanking(entries);
+      setRanking(data.map((row) => ({ user_name: row.user_name, count: Number(row.count) })));
     }
     setLoading(false);
   };

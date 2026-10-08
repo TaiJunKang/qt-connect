@@ -394,7 +394,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_monthly_ranking: {
+        Args: { p_year: number; p_month: number }
+        Returns: {
+          user_id: string
+          user_name: string
+          count: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
