@@ -10,7 +10,6 @@ import WriteTab from "@/components/WriteTab";
 import CommunityTab from "@/components/CommunityTab";
 import RankingTab from "@/components/RankingTab";
 import SettingsTab from "@/components/SettingsTab";
-import InstallPrompt from "@/components/InstallPrompt";
 import PasswordResetDialog from "@/components/PasswordResetDialog";
 import LambBuddy from "@/components/lamb/LambBuddy";
 import type { User } from "@supabase/supabase-js";
@@ -150,8 +149,6 @@ const Index = () => {
       {/* 모든 화면을 따라다니는 어린 양 */}
       <LambBuddy userId={user.id} raised={activeTab === "write"} />
 
-      {/* PWA install prompt */}
-      <InstallPrompt />
     </div>
   );
 };

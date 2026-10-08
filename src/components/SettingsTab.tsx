@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { LogOut, User, ShieldCheck, ChevronRight, Bell, BellOff, Settings, BookMarked, BookOpenCheck, Moon, Sun, ImageIcon, Camera, Loader2 } from "lucide-react";
+import { LogOut, Smartphone, User, ShieldCheck, ChevronRight, Bell, BellOff, Settings, BookMarked, BookOpenCheck, Moon, Sun, ImageIcon, Camera, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { getAvatarColor } from "./community/avatar";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { signOut } from "@/lib/supabase-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MyArchive from "./MyArchive";
+import { useInstallFlow } from "./InstallPrompt";
 import BibleReadingPlan from "./BibleReadingPlan";
 import CardNewsGenerator from "./CardNewsGenerator";
 import {
@@ -86,6 +87,7 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
     }
   };
   const navigate = useNavigate();
+  const install = useInstallFlow();
 
   const supported = isNotificationSupported();
   const [notifEnabled, setNotifEnabled] = useState(getNotificationEnabled());
@@ -176,8 +178,27 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
         </div>
       </div>
 
+      {install.dialog}
+
       {/* ── Menu items ── */}
       <div className="rounded-[22px] bg-card border border-border divide-y divide-border overflow-hidden">
+        {/* 홈 화면에 추가 (설치 전에만) */}
+        {install.platform !== "installed" && (
+          <button
+            onClick={install.start}
+            className="w-full flex items-center gap-3.5 px-5 py-4 text-left hover:bg-accent/40 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-4 h-4 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[13px] font-semibold text-foreground">홈 화면에 추가</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">아이콘을 누르면 앱처럼 바로 열려요</p>
+            </div>
+            <span className="text-[12px] font-bold text-primary">{install.label}</span>
+          </button>
+        )}
+
         {/* My Archive */}
         <button
           onClick={() => setShowArchive(true)}

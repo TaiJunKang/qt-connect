@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false, // src/main.tsx에서 직접 등록 (업데이트 확인 주기 제어)
-      includeAssets: ["logo.svg"],
+      includeAssets: ["logo.svg", "icons/icon-180.png"],
       manifest: {
         name: "QT Connect - 홍제감리교회 청년부",
         short_name: "QT Connect",
@@ -31,12 +31,9 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         lang: "ko",
         icons: [
-          {
-            src: "/logo.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any maskable",
-          },
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
