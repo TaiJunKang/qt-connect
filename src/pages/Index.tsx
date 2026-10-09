@@ -132,7 +132,7 @@ const Index = () => {
     <div className="min-h-screen bg-background md:flex">
       <PasswordResetDialog open={recovering} onDone={() => setRecovering(false)} />
       {/* Desktop sidebar — hidden on mobile */}
-      <DesktopSidebar activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
+      <DesktopSidebar userId={user.id} activeTab={activeTab} onTabChange={(tab) => { if (tab !== "write") setWriteDate(undefined); setActiveTab(tab); }} />
 
       {/* Main content area */}
       <div className="flex-1 md:ml-60">

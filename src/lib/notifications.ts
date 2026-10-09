@@ -52,7 +52,7 @@ export function showQtReminder() {
 
   new Notification("QT Connect", {
     body: "오늘의 큐티를 아직 작성하지 않았어요. 말씀과 함께 하루를 시작해보세요!",
-    icon: "/logo.svg",
+    icon: "/icons/icon-192.png",
     tag: "qt-daily-reminder",
   });
 }

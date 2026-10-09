@@ -10,6 +10,7 @@ interface CardNewsGeneratorProps {
   onClose: () => void;
   initialReference?: string;
   initialText?: string;
+  label?: string; // 카드 상단에 들어갈 공동체 이름
 }
 
 interface CardStyle {
@@ -51,7 +52,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-export default function CardNewsGenerator({ onClose, initialReference, initialText }: CardNewsGeneratorProps) {
+export default function CardNewsGenerator({ onClose, initialReference, initialText, label = "QT Connect" }: CardNewsGeneratorProps) {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -104,7 +105,7 @@ export default function CardNewsGenerator({ onClose, initialReference, initialTe
     ctx.font = `500 20px -apple-system, 'Segoe UI', sans-serif`;
     ctx.fillStyle = style.refColor;
     ctx.textBaseline = "top";
-    ctx.fillText("홍제감리교회 청년부", pad, 110);
+    ctx.fillText(label, pad, 110);
 
     // ── Reference ──
     let refY = 155;
@@ -159,7 +160,7 @@ export default function CardNewsGenerator({ onClose, initialReference, initialTe
     ctx.fillText("HTCT QT Connect", W - pad, H - 55);
     ctx.textAlign = "left";
     ctx.globalAlpha = 1;
-  }, [reference, verseText, subtitle, style, fontSize]);
+  }, [reference, verseText, subtitle, style, fontSize, label]);
 
   // Re-render whenever inputs or fonts change
   useEffect(() => {

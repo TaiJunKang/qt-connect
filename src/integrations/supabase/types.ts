@@ -14,8 +14,15 @@ export type Database = {
   }
   public: {
     Tables: {
+      communities: {
+        Row: { id: string; name: string; sort_order: number; created_at: string }
+        Insert: { id?: string; name: string; sort_order?: number; created_at?: string }
+        Update: { id?: string; name?: string; sort_order?: number; created_at?: string }
+        Relationships: []
+      }
       announcements: {
         Row: {
+          community_id: string | null
           category: string
           content: string
           created_at: string
@@ -28,6 +35,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          community_id?: string | null
           category?: string
           content?: string
           created_at?: string
@@ -40,6 +48,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          community_id?: string | null
           category?: string
           content?: string
           created_at?: string
@@ -210,6 +219,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          community_id: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -219,6 +229,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          community_id?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -228,6 +239,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          community_id?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null

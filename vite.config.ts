@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
       injectRegister: false, // src/main.tsx에서 직접 등록 (업데이트 확인 주기 제어)
       includeAssets: ["logo.svg", "icons/icon-180.png"],
       manifest: {
-        name: "QT Connect - 홍제감리교회 청년부",
+        name: "QT Connect",
         short_name: "QT Connect",
         description: "매일 말씀과 함께하는 큐티 나눔 플랫폼",
         theme_color: "#f8f5ef",

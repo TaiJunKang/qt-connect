@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { signIn, signUp, resetPassword } from "@/lib/supabase-auth";
+import { useCommunities } from "@/lib/community";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,8 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [communityId, setCommunityId] = useState("");
+  const communities = useCommunities();
   const [loading, setLoading] = useState(false);
   const [resetMode, setResetMode] = useState(false);
   const { toast } = useToast();
@@ -44,7 +47,11 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
           toast({ title: "이름을 입력해주세요.", variant: "destructive" });
           return;
         }
-        const { error } = await signUp(email, password, displayName);
+        if (!communityId) {
+          toast({ title: "소속 공동체를 선택해주세요.", variant: "destructive" });
+          return;
+        }
+        const { error } = await signUp(email, password, displayName, communityId);
         if (error) throw error;
         toast({
           title: "회원가입 완료!",
@@ -66,11 +73,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
       <div className="flex flex-col items-center pt-20 pb-10 md:pt-24 md:pb-12 px-6">
         {/* Logo */}
         <div className="mb-4">
-          <img
-            src="/logo.svg"
-            alt="HTCT"
-            className="h-12 dark:invert"
-          />
+          <img src="/icons/icon-180.png" alt="QT Connect" className="w-20 h-20 rounded-[22px]" />
         </div>
 
         {/* Brand text */}
@@ -78,7 +81,7 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
           QT Connect
         </h1>
         <p className="text-[14px] text-muted-foreground mt-1">
-          홍제감리교회 청년부
+          말씀으로 하루를 여는 큐티 나눔
         </p>
       </div>
 
@@ -115,6 +118,32 @@ export default function AuthPage({ onAuthSuccess }: AuthPageProps) {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!resetMode && mode === "signup" && (
+              <fieldset className="space-y-2">
+                <legend className="text-[13px] font-medium text-foreground mb-2">소속 공동체</legend>
+                <div className="grid gap-2">
+                  {communities.map((c) => (
+                    <label
+                      key={c.id}
+                      className={`flex items-center gap-3 h-12 px-4 rounded-xl bg-card shadow-card cursor-pointer text-[14px] transition-colors ${
+                        communityId === c.id ? "ring-2 ring-primary font-semibold" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="community"
+                        value={c.id}
+                        checked={communityId === c.id}
+                        onChange={() => setCommunityId(c.id)}
+                        className="accent-[hsl(var(--primary))] w-4 h-4"
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+
             {!resetMode && mode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="displayName" className="text-[13px] font-medium text-foreground">

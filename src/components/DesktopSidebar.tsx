@@ -1,22 +1,25 @@
 import { tabs, type Tab } from "@/lib/navigation";
+import { useMyCommunityName } from "@/lib/community";
 
 interface DesktopSidebarProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  userId?: string;
 }
 
-export default function DesktopSidebar({ activeTab, onTabChange }: DesktopSidebarProps) {
+export default function DesktopSidebar({ activeTab, onTabChange, userId }: DesktopSidebarProps) {
+  const communityName = useMyCommunityName(userId);
   return (
     <aside className="hidden md:flex md:flex-col md:w-60 md:fixed md:inset-y-0 md:left-0 md:z-40 md:border-r md:border-sidebar-border md:bg-sidebar">
       {/* Header */}
       <div className="px-6 pt-8 pb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-            <img src="/logo.svg" alt="QT Connect" className="w-full h-full" />
+            <img src="/icons/icon-180.png" alt="QT Connect" className="w-full h-full" />
           </div>
           <div>
             <h2 className="font-display text-[16px] text-sidebar-foreground">QT Connect</h2>
-            <p className="text-[10px] text-sidebar-foreground/40 tracking-wide">홍제감리교회 청년부</p>
+            <p className="text-[11px] text-sidebar-foreground/60 truncate">{communityName ?? " "}</p>
           </div>
         </div>
       </div>

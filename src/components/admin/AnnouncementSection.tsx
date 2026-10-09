@@ -118,7 +118,7 @@ export default function AnnouncementSection() {
             공지사항 관리
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-0.5">
-            청년부 공지를 등록하면 홈 화면에 표시됩니다.
+            공지를 등록하면 우리 공동체 홈 화면에 표시됩니다.
           </p>
         </CardHeader>
         <CardContent>

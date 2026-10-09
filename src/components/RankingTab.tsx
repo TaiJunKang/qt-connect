@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import MyStats from "./MyStats";
 import UserAvatar from "./UserAvatar";
+import { useMyCommunityName } from "@/lib/community";
 
 interface RankingTabProps {
   userId: string;
@@ -27,6 +28,7 @@ export default function RankingTab({ userId }: RankingTabProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [prevTotal, setPrevTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const communityName = useMyCommunityName(userId);
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -127,7 +129,7 @@ export default function RankingTab({ userId }: RankingTabProps) {
       {/* ── 공동체 목표 ── */}
       <section className="rounded-3xl bg-foreground text-background px-5 py-[22px] space-y-3.5">
         <p className="text-[13px] font-medium opacity-75">
-          {isCurrentMonth ? "이번 달" : `${month}월`} 우리 공동체 묵상 목표
+          {isCurrentMonth ? "이번 달" : `${month}월`} {communityName ?? "우리 공동체"} 묵상 목표
         </p>
         <div className="flex items-baseline gap-1.5">
           <span className="text-[44px] font-extrabold tracking-[-0.03em] leading-none tabular-nums">{loading ? "–" : total}</span>
