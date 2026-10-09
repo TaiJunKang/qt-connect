@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import MyArchive from "./MyArchive";
 import { useInstallFlow } from "./InstallPrompt";
 import { useMyCommunityName } from "@/lib/community";
+import CommunitySwitcher from "./CommunitySwitcher";
 import BibleReadingPlan from "./BibleReadingPlan";
 import CardNewsGenerator from "./CardNewsGenerator";
 import {
@@ -175,9 +176,7 @@ export default function SettingsTab({ email, displayName, userId, isAdmin, avata
             <div className="flex-1 min-w-0">
               <p className="text-[18px] font-extrabold text-foreground truncate">{displayName || "사용자"}</p>
               <p className="text-[13px] text-muted-foreground truncate">{email}</p>
-              {communityName && (
-                <span className="inline-block mt-1.5 text-[12px] font-semibold text-primary bg-primary-soft rounded-lg px-2 py-0.5">{communityName}</span>
-              )}
+              <CommunitySwitcher />
             </div>
           </div>
         </div>

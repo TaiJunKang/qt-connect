@@ -427,6 +427,18 @@ export type Database = {
           created_at: string
         }[]
       }
+      get_my_communities: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; name: string; role: string; is_current: boolean }[]
+      }
+      switch_community: {
+        Args: { p_community: string }
+        Returns: undefined
+      }
+      is_community_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       get_shared_logs: {
         Args: { p_from: string; p_to: string }
         Returns: {

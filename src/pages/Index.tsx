@@ -48,6 +48,9 @@ const Index = () => {
       getProfile(user.id).then(({ data }) => {
         setDisplayName(data?.display_name || user.email?.split("@")[0] || "사용자");
         setIsAdmin(data?.role === "admin");
+        supabase.rpc("is_community_admin").then(({ data: communityAdmin }) => {
+          if (communityAdmin) setIsAdmin(true);
+        });
         setAvatarUrl(data?.avatar_url || null);
       });
     } else {

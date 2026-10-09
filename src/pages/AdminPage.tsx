@@ -44,7 +44,8 @@ export default function AdminPage() {
         .eq("user_id", session.user.id)
         .single();
 
-      if (profile?.role !== "admin") {
+      const { data: communityAdmin } = await supabase.rpc("is_community_admin");
+      if (profile?.role !== "admin" && !communityAdmin) {
         toast({
           title: "관리자만 접근할 수 있습니다",
           description: "권한이 없습니다.",
